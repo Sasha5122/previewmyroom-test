@@ -1,0 +1,3001 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Base vs Variant Viewer</title>
+  <style>
+    :root{
+      --bg0:#0F1117;
+      --bg1:#1A1F2E;
+      --card: rgba(255,255,255,.06);
+      --stroke: rgba(255,255,255,.12);
+      --txt: rgba(255,255,255,.95);
+      --muted: rgba(255,255,255,.60);
+      --accent:#00D4FF;
+      --accent2:#FF6B35;
+      --accent3:#A78BFA;
+      --accent4:#10B981;
+      --shadow: 0 20px 60px rgba(0,0,0,.55);
+      --r: 20px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      color:var(--txt);
+      font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      -webkit-text-size-adjust: 100%;
+      background:
+        radial-gradient(1400px 900px at 15% -5%, rgba(0,212,255,.15), transparent 50%),
+        radial-gradient(1000px 800px at 85% 10%, rgba(255,107,53,.12), transparent 55%),
+        radial-gradient(900px 900px at 50% 120%, rgba(16,185,129,.08), transparent 60%),
+        radial-gradient(800px 600px at 80% 80%, rgba(167,139,250,.10), transparent 50%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      padding: 18px 14px 28px;
+      touch-action: manipulation;
+    }
+
+    .wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      display:flex;
+      flex-direction:column;
+      gap: 14px;
+    }
+
+    header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:10px;
+      padding: 6px 4px;
+    }
+    .header-buttons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .title{display:flex; flex-direction:column; gap:4px;}
+    .title h1{margin:0; font-size:18px; letter-spacing:.2px;}
+    .title p{margin:0; color:var(--muted); font-size:13px;}
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius:999px;
+      background: linear-gradient(135deg, rgba(0,212,255,.12), rgba(16,185,129,.12));
+      border: 1px solid var(--stroke);
+      box-shadow: 0 10px 24px rgba(0,0,0,.20);
+      color: var(--muted);
+      font-size: 12.5px;
+      white-space:nowrap;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent4));
+      box-shadow: 0 0 14px rgba(0,212,255,.40);
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+
+    .compare{
+      position:relative;
+      width:100%;
+      aspect-ratio: 16 / 10;
+      min-height: 260px;
+      max-height: 560px;
+      background: rgba(0,0,0,.2);
+    }
+
+    .imgLayer{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit: cover;
+      user-select:none;
+      -webkit-user-drag:none;
+    }
+
+    /* Variant image visible on RIGHT side */
+    .variant{
+      clip-path: inset(0 0 0 var(--pos));
+      filter: saturate(1.05) contrast(1.05);
+    }
+
+    .divider{
+      position:absolute;
+      top:0; bottom:0;
+      left: var(--pos);
+      width: 2px;
+      background: linear-gradient(180deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 20px rgba(0,212,255,.50), 0 0 40px rgba(255,107,53,.30);
+      transform: translateX(-1px);
+      pointer-events:none;
+    }
+
+    .handle{
+      position:absolute;
+      left: var(--pos);
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 50px;
+      height: 50px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, rgba(0,212,255,.20), rgba(255,107,53,.10));
+      border: 2px solid rgba(0,212,255,.40);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 0 30px rgba(0,212,255,.40), 0 14px 36px rgba(0,0,0,.50);
+      display:grid;
+      place-items:center;
+      pointer-events:none;
+    }
+    .handle:before{
+      content:"";
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 16px rgba(0,212,255,.60);
+    }
+
+    .range{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      margin:0;
+      opacity:0;
+      cursor: ew-resize;
+      pointer-events: none;
+    }
+
+    .navBtn{
+      position:absolute;
+      top:50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(10,16,30,.45);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 14px 34px rgba(0,0,0,.38);
+      color: var(--txt);
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+    .navBtn{ z-index: 5; }
+    .labels{ z-index: 4; }
+    .divider, .handle{ z-index: 3; }
+    .imgLayer{ z-index: 1; }
+    .navBtn:hover{ background: rgba(10,16,30,.62); border-color: rgba(255,255,255,.28); }
+    .navBtn:active{ transform: translateY(-50%) scale(.98); }
+    .navBtn.left{ left: 10px; }
+    .navBtn.right{ right: 10px; }
+    .navBtn svg{ width:18px; height:18px; opacity:.92; }
+
+    /* new blur overlay styles */
+    .blur-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      backdrop-filter: blur(0);
+      transition: backdrop-filter 8s ease-in;
+      z-index: 9998;
+    }
+    #pageContent.is-blurred {
+      /* target strength can be adjusted as needed */
+      filter: blur(5px); /* moderate blur - obscures details but not harsh on eyes */
+      pointer-events: none;
+    }
+    /* Fullscreen layer that centers content without transform */
+    .payment-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: none;
+      place-items: center;
+      background: rgba(0,0,0,.45);
+    }
+    .payment-layer.show {
+      display: grid;
+    }
+    .payment-button-container {
+      position: relative;
+      top: auto;
+      left: auto;
+      transform: none !important;
+      z-index: 10001;
+      background: linear-gradient(135deg, rgba(26, 31, 46, 0.95), rgba(10, 17, 30, 0.98));
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      padding: 24px;
+      border-radius: 20px;
+      border: 2px solid rgba(0, 212, 255, 0.35);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 212, 255, 0.15);
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+      width: 420px;
+      max-width: 90vw;
+      max-height: 85vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      animation: slideUp 0.3s ease;
+      pointer-events: auto !important;
+      touch-action: auto !important;
+      box-sizing: border-box;
+      scrollbar-gutter: stable;
+      cursor: auto;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    
+    /* Smooth scrollbar styling */
+    .payment-button-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    .payment-button-container::-webkit-scrollbar-track {
+      background: rgba(0, 212, 255, 0.05);
+      border-radius: 3px;
+    }
+    .payment-button-container::-webkit-scrollbar-thumb {
+      background: rgba(0, 212, 255, 0.3);
+      border-radius: 3px;
+    }
+    .payment-button-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 212, 255, 0.5);
+    }
+    @keyframes slideUp {
+      from { transform: translate(-50%, -45%); opacity: 0; }
+      to { transform: translate(-50%, -50%); opacity: 1; }
+    }
+    .payment-button-container #paypal-button-container {
+      min-width: 100%;
+      max-width: 100%;
+      pointer-events: auto !important;
+      touch-action: auto !important;
+      width: 100%;
+      overflow: visible !important;
+      z-index: 10002;
+      flex-shrink: 0;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      min-height: 50px;
+      display: block !important;
+      cursor: pointer !important;
+    }
+    #paypal-button-container {
+      pointer-events: auto !important;
+      cursor: pointer !important;
+    }
+    #paypal-button-container * {
+      pointer-events: auto !important;
+      touch-action: auto !important;
+      cursor: pointer !important;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #paypal-button-container iframe {
+      pointer-events: auto !important;
+      touch-action: auto !important;
+      display: block !important;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    #paypal-button-container button {
+      pointer-events: auto !important;
+      touch-action: auto !important;
+      cursor: pointer !important;
+      display: block !important;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    #paypal-button-container .pp-button {
+      pointer-events: auto !important;
+      cursor: pointer !important;
+      display: block !important;
+    }
+    #paypal-button-container [data-funding-source] {
+      pointer-events: auto !important;
+      touch-action: auto !important;
+      cursor: pointer !important;
+      display: block !important;
+    }
+    .payment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      flex-shrink: 0;
+      margin-bottom: 8px;
+    }
+    .payment-header button {
+      background: none;
+      border: none;
+      color: rgba(0,212,255,.6);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      transition: color 0.2s ease;
+    }
+    .payment-header button:hover {
+      color: rgba(0,212,255,.95);
+    }
+    .payment-text {
+      text-align: center;
+      color: rgba(255,255,255,.9);
+      width: 100%;
+      overflow: visible;
+      flex-shrink: 0;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    .payment-text h2 {
+      margin: 0 0 8px 0;
+      font-size: 20px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+    }
+    .payment-text p {
+      margin: 0;
+      line-height: 1.6;
+      color: rgba(255,255,255,.75);
+      font-size: 13px;
+    }
+
+    @media (max-width: 600px) {
+      .payment-header {
+        margin-bottom: 4px;
+      }
+      .payment-header button {
+        font-size: 20px;
+        width: 32px;
+        height: 32px;
+      }
+      .payment-button-container {
+        padding: 16px 12px;
+        gap: 12px;
+        width: 100%;
+        max-width: 340px;
+        max-height: 80vh;
+        pointer-events: auto !important;
+        touch-action: auto !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box;
+        scrollbar-gutter: stable;
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .payment-text {
+        flex-shrink: 0;
+        margin-bottom: 4px;
+      }
+      .payment-text h2 {
+        font-size: 16px;
+        margin: 0 0 6px 0;
+      }
+      .payment-text p {
+        font-size: 11px;
+        line-height: 1.4;
+        margin: 0;
+      }
+      .payment-button-container #paypal-button-container {
+        max-width: 100%;
+        width: 100%;
+        min-width: 100%;
+        pointer-events: auto !important;
+        touch-action: auto !important;
+        flex-shrink: 0;
+        display: block !important;
+        min-height: 55px;
+        overflow: visible !important;
+        margin: 0;
+        padding: 0;
+      }
+      .payment-button-container #paypal-button-container > * {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        pointer-events: auto !important;
+      }
+      .payment-button-container #paypal-button-container iframe {
+        width: 100% !important;
+        max-width: 100% !important;
+        pointer-events: auto !important;
+        touch-action: auto !important;
+        display: block !important;
+      }
+      /* Ensure PayPal buttons can receive touch events */
+      .payment-button-container button {
+        pointer-events: auto !important;
+        touch-action: auto !important;
+      }
+      .unlock-message {
+        font-size: 12px;
+        padding: 10px 14px;
+      }
+    }
+    .unlock-message {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 10000;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, var(--accent4), var(--accent));
+      border-radius: 12px;
+      border: 2px solid rgba(16,185,129,.5);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      display: none;
+      box-shadow: 0 8px 24px rgba(16,185,129,.40);
+    }
+    .unlock-message.show {
+      display: block;
+      animation: pulse 0.5s ease;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    /* Card payment button bounce animation - subtle */
+    @keyframes cardBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    /* Apply subtle bounce to card payment button */
+    #paypal-button-container [data-funding-source="card"] {
+      animation: cardBounce 1.5s ease-in-out infinite !important;
+    }
+
+    /* zoom overlay styles */
+    .zoom-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.85);
+      z-index: 10001;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+      overflow: hidden;
+    }
+    .zoom-overlay.visible { display: flex; }
+    .zoom-overlay img {
+      max-width: 95vw;
+      max-height: 95vh;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      transform-origin: center center;
+      touch-action: none;
+      user-select: none;
+      will-change: transform;
+    }
+    .zoom-button {
+      position: absolute;
+      top: 120px;
+      right: 12px;
+      z-index: 6;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      border: 2px solid rgba(0,212,255,.5);
+      border-radius: 14px;
+      width: 60px;
+      height: 60px;
+      font-size: 28px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 8px 28px rgba(0,212,255,.45), 0 0 20px rgba(255,107,53,.20);
+    }
+    .zoom-button:hover {
+      transform: scale(1.1);
+      box-shadow: 0 12px 36px rgba(0,212,255,.60), 0 0 28px rgba(255,107,53,.30);
+    }
+    .zoom-button:active {
+      transform: scale(0.95);
+    }
+    .zoom-close-button {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 10002;
+      background: linear-gradient(135deg, var(--accent4), var(--accent));
+      border: 2px solid rgba(16,185,129,.5);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 24px;
+      padding: 12px 16px;
+      cursor: pointer;
+      min-width: 50px;
+      min-height: 50px;
+      display: grid;
+      place-items: center;
+      font-weight: bold;
+      transition: all 0.2s ease;
+      box-shadow: 0 8px 24px rgba(16,185,129,.40);
+    }
+    .zoom-close-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 12px 32px rgba(16,185,129,.50);
+    }
+    .zoom-download-button {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      z-index: 10002;
+      background: linear-gradient(135deg, var(--accent2), #FF8A50);
+      border: 2px solid rgba(255,107,53,.6);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 12px 18px;
+      cursor: pointer;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      box-shadow: 0 8px 24px rgba(255,107,53,.40);
+    }
+    .zoom-download-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 12px 32px rgba(255,107,53,.50);
+    }
+    .download-all-button {
+      padding: 14px 20px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(0,212,255,.20), rgba(255,107,53,.20));
+      border: 2px solid rgba(0,212,255,.50);
+      color: rgba(255,255,255,.95);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .download-all-button:hover {
+      background: linear-gradient(135deg, rgba(0,212,255,.30), rgba(255,107,53,.30));
+      border-color: rgba(0,212,255,.80);
+      box-shadow: 0 8px 24px rgba(0,212,255,.30);
+    }
+
+    /* Hide premium features until payment */
+    #zoomBtn,
+    #downloadAllBtn {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    
+    /* Show after payment */
+    #zoomBtn.unlocked,
+    #downloadAllBtn.unlocked {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Modal backdrop to prevent interaction with page */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: transparent;
+      z-index: 9999;
+      display: none;
+      pointer-events: none;
+    }
+    .modal-backdrop.show {
+      display: block;
+      pointer-events: none;
+    }
+
+    .labels{
+      position:absolute;
+      left: 12px;
+      right: 12px;
+      top: 12px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      pointer-events:none;
+    }
+    .tag{
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      font-size: 12px;
+      color: rgba(255,255,255,.82);
+    }
+
+    .panel{
+      padding: 14px 14px 16px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+    }
+
+    .panelTitle{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .panelTitle h2{
+      margin:0;
+      font-size: 14px;
+      letter-spacing: .2px;
+      color: rgba(255,255,255,.88);
+    }
+
+    .kbd{
+      font-size: 12px;
+      color: var(--muted);
+      padding: 7px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+    }
+
+    .textBox{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
+      padding: 12px 12px;
+      color: rgba(255,255,255,.86);
+    }
+
+    .textBox p{ margin:0; }
+    .textBox .muted{ color: var(--muted); }
+
+    .metaRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.78);
+      font-size: 12px;
+    }
+
+    /* Rich formatting inside the text area */
+    .rich h3{ margin: 10px 0 6px; font-size: 13px; color: rgba(255,255,255,.90); }
+    .rich ul{ margin: 6px 0 0 18px; padding:0; }
+    .rich li{ margin: 4px 0; color: rgba(255,255,255,.82); }
+    .rich .hr{
+      margin: 10px 0;
+      height:1px;
+      background: rgba(255,255,255,.12);
+    }
+    .swatch{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.20);
+      color: rgba(255,255,255,.82);
+      font-size: 12px;
+    }
+    .swatch .box{
+      width:14px;height:14px;border-radius:4px;
+      border:1px solid rgba(255,255,255,.22);
+      box-shadow: 0 8px 16px rgba(0,0,0,.35);
+      background: var(--c);
+    }
+
+    /* Carousel dots */
+    .carousel-dots {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 0;
+      margin: 0;
+      pointer-events: none;
+    }
+    .carousel-dots .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.25);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      pointer-events: auto;
+      border: 1px solid rgba(0,212,255,.2);
+    }
+    .carousel-dots .dot.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      width: 28px;
+      border-radius: 5px;
+      box-shadow: 0 0 16px rgba(0,212,255,.70), 0 0 8px rgba(255,107,53,.50);
+      border-color: rgba(0,212,255,.9);
+      transform: scale(1);
+    }
+    .carousel-dots .dot:hover {
+      background: rgba(0,212,255,.6);
+      transform: scale(1.15);
+      box-shadow: 0 0 12px rgba(0,212,255,.50);
+    }
+    .carousel-dots .dot:active {
+      transform: scale(0.95);
+    }
+
+    @media (min-width: 860px){
+      .panelGrid{
+        display:grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      header .title h1{ font-size: 20px; }
+      .compare{ aspect-ratio: 16/9; }
+    }
+
+    /* mobile-specific tweaks */
+    @media (max-width: 859px){
+      body { font-size: 17px; }
+      header .title h1{ font-size: 18px; }
+      .navBtn{ width: 54px; height: 54px; border-radius: 18px; }
+      .navBtn svg{ width:24px; height:24px; }
+      .compare{ min-height: 260px; /* keep same but allow more flex */ }
+      .tag { font-size: 14px; padding: 10px 12px; }
+      /* ensure the range input is easy to hit on touch devices */
+      .range{ height:100%; }
+      /* allow panels to scroll naturally with inertia */
+      .panelGrid .card {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .textBox.rich { max-height: 200px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- full‑screen blur layer; starts clear then animates in -->
+  <div id="blurOverlay" class="blur-overlay"></div>
+  
+  <!-- Modal backdrop -->
+  <div class="modal-backdrop" id="modalBackdrop"></div>
+  
+  <!-- PayPal SDK -->
+  <script src="https://www.paypal.com/sdk/js?client-id=AT99Mni9WIsd_2Pvo8_B02s_UOeyH_11EzMRyEShBg5eJOx0wGIAITsGw52a7ntpAohIxqTtGGNAv7I2&currency=USD&intent=capture"></script>
+  
+  <!-- Payment button container -->
+  <div class="payment-layer" id="paymentLayer">
+    <div class="payment-button-container" id="paymentContainer">
+      <div class="payment-header">
+        <div></div>
+        <h3 style="margin: 0; font-size: 14px; color: rgba(255,255,255,.7);">Payment</h3>
+        <button type="button" id="cancelPaymentBtn" aria-label="Cancel payment" title="Cancel">✕</button>
+      </div>
+      <div class="payment-text">
+        <h2>Your preview is ready 🎨</h2>
+        <p>Unlock your full color package, including all variants, paint references, and budget guidance.<br><br>One-time payment. Secure checkout.</p>
+      </div>
+      <div id="paypal-button-container"></div>
+    </div>
+  </div>
+  
+  <!-- Unlock success message -->
+  <div class="unlock-message" id="unlockMessage">✓ Unlocked!</div>
+
+  <!-- fullscreen zoomable image overlay -->
+  <div id="zoomOverlay" class="zoom-overlay" aria-hidden="true">
+    <button id="zoomCloseBtn" class="zoom-close-button" aria-label="Close full screen view" type="button">✕</button>
+    <button id="zoomDownloadBtn" class="zoom-download-button" aria-label="Download this image" type="button">⬇ Download</button>
+    <img id="zoomImg" alt="Expanded variant" />
+  </div>
+
+  <div id="pageContent">
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>Before / After</h1>
+        <p>Slide to compare the <b>original</b> room with selected repaint option. Use the arrows to explore all designs.</p>
+      </div>
+      <div class="header-buttons">
+        <button id="downloadAllBtn" class="download-all-button" aria-label="Download all images" type="button">Download all images</button>
+        <div class="pill"><span class="dot"></span><span id="counter">1 / 10</span></div>
+      </div>
+    </header>
+
+    <section class="card compare" id="compareCard" style="--pos:50%;">
+      <img class="imgLayer base" id="baseImg" alt="Base image" />
+      <img class="imgLayer variant" id="variantImg" alt="Variant image" />
+      <!-- zoom button for right/variant image -->
+      <button id="zoomBtn" class="zoom-button" aria-label="View variant full screen" type="button">🔍</button>
+
+      <div class="labels">
+        <div class="tag" id="baseLabel">Base</div>
+        <div class="tag" id="variantLabel">Option 1</div>
+      </div>
+
+      <div class="divider" aria-hidden="true"></div>
+      <div class="handle" aria-hidden="true"></div>
+
+      <button class="navBtn left" id="prevBtn" aria-label="Previous option" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+
+      <button class="navBtn right" id="nextBtn" aria-label="Next option" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+
+      <input class="range" id="slider" type="range" min="0" max="100" value="50" aria-label="Reveal slider" />
+    </section>
+
+    <!-- Carousel dots - below image -->
+    <div class="carousel-dots" id="carouselDots"></div>
+
+    <section class="panelGrid">
+      <section class="card panel">
+        <div class="panelTitle">
+          <h2>Your selected repaint option</h2>
+          <div class="kbd">Updates as you browse</div>
+        </div>
+        <div class="textBox rich" id="variantBox">
+          <div id="variantHtml"></div>
+        </div>
+        <div class="metaRow" id="variantMeta"></div>
+      </section>
+
+      <section class="card panel">
+        <div class="panelTitle">
+          <h2>Project overview & buying guidance</h2>
+          <div class="kbd">Universal</div>
+        </div>
+        <div class="textBox rich" id="generalBox">
+          <div id="generalHtml"></div>
+        </div>
+        <div class="metaRow" id="generalMeta"></div>
+      </section>
+    </section>
+  </div>
+  </div>
+
+  <script>
+    // ----------------------------------------------------------
+    // Folder structure (recommended):
+    //   visualisation/
+    //     index.html
+    //     pictures/
+    //       room_base_1024.png
+    //       01_single.jpg ... 10_creative.jpg
+    // ----------------------------------------------------------
+
+    const baseImageUrl = "./pictures/room_base_1024.png";
+
+    // ✅ Full data embedded (from your JSON)
+    const repaintData = {
+  "notes": "10 repaint options for a room originally near #A6B5A0 color, featuring diverse and distinctive color choices thoughtfully designed for both aesthetics and ambiance.",
+  "assumptions_us": {
+    "wall_area_sqft": 430.0,
+    "coats": 2,
+    "coverage_sqft_per_gallon_per_coat": 350.0,
+    "waste_factor": 1.12,
+    "primer_needed": false,
+    "primer_coats": 1,
+    "primer_coverage_sqft_per_gallon_per_coat": 300.0,
+    "currency": "USD",
+    "paint_price_per_gallon": 42.0,
+    "primer_price_per_gallon": 22.0,
+    "supplies_flat_cost": 55.0,
+    "labor_mode": "hourly",
+    "labor_rate_per_hour": 35.0,
+    "hours_for_prep": 3.5,
+    "hours_per_coat": 2.5,
+    "labor_rate_per_sqft": 0.85,
+    "location_hint": "USA",
+    "suggested_store_types": [
+      "Sherwin-Williams store",
+      "Benjamin Moore dealer",
+      "Home Depot (Behr)",
+      "Lowe's (Valspar)",
+      "Local paint/hardware store"
+    ]
+  },
+  "images": [
+    {
+      "index": 1,
+      "type": "single",
+      "image": "01_single.jpg",
+      "colors": [
+        {
+          "name": "Soft Warm Taupe",
+          "hex": "#8B7E74",
+          "role": "all_walls",
+          "area_percent": 100,
+          "why": "A cozy, neutral shade that adds warmth and contrasts nicely with the original cool green-beige tone."
+        }
+      ],
+      "layout": {},
+      "estimate_us": {
+        "assumptions_used": {
+          "wall_area_sqft": 430.0,
+          "coats": 2,
+          "coverage_sqft_per_gallon_per_coat": 350.0,
+          "waste_factor": 1.12,
+          "primer_needed": false,
+          "currency": "USD",
+          "paint_price_per_gallon": 42.0,
+          "primer_price_per_gallon": 22.0,
+          "supplies_flat_cost": 55.0,
+          "labor_mode": "hourly"
+        },
+        "quantities_by_color": [
+          {
+            "name": "Soft Warm Taupe",
+            "hex": "#8B7E74",
+            "role": "all_walls",
+            "area_percent": 100,
+            "wall_area_sqft": 430.0,
+            "paint_needed_gallons_estimate": 2.75,
+            "purchase_recommendation": {
+              "gallons": 3,
+              "quarts": 0,
+              "total_gallons": 3.0
+            },
+            "paint_cost_estimate": 126.0,
+            "currency": "USD"
+          }
+        ],
+        "totals": {
+          "paint_total_purchase_gallons": 3.0,
+          "paint_cost_total": 126.0,
+          "primer_needed_gallons_estimate": 0.0,
+          "primer_purchase_recommendation": {
+            "gallons": 0,
+            "quarts": 0,
+            "total_gallons": 0.0
+          },
+          "primer_cost_total": 0.0,
+          "supplies_cost_total": 55.0,
+          "labor_cost_total": 297.5,
+          "labor_hours_estimate": 8.5,
+          "total_estimated_cost": 478.5,
+          "currency": "USD"
+        },
+        "time_estimate_simple": "2 days (prep + 2 coats + drying between coats)"
+      }
+    },
+    {
+      "index": 2,
+      "type": "single",
+      "image": "02_single.jpg",
+      "colors": [
+        {
+          "name": "Slate Blue",
+          "hex": "#6A7F94",
+          "role": "all_walls",
+          "area_percent": 100,
+          "why": "A muted cool blue that introduces a calming ambiance, distinctly different from the current pale greenish tint."
+        }
+      ],
+      "layout": {},
+      "estimate_us": {
+        "assumptions_used": {
+          "wall_area_sqft": 430.0,
+          "coats": 2,
+          "coverage_sqft_per_gallon_per_coat": 350.0,
+          "waste_factor": 1.12,
+          "primer_needed": false,
+          "currency": "USD",
+          "paint_price_per_gallon": 42.0,
+          "primer_price_per_gallon": 22.0,
+          "supplies_flat_cost": 55.0,
+          "labor_mode": "hourly"
+        },
+        "quantities_by_color": [
+          {
+            "name": "Slate Blue",
+            "hex": "#6A7F94",
+            "role": "all_walls",
+            "area_percent": 100,
+            "wall_area_sqft": 430.0,
+            "paint_needed_gallons_estimate": 2.75,
+            "purchase_recommendation": {
+              "gallons": 3,
+              "quarts": 0,
+              "total_gallons": 3.0
+            },
+            "paint_cost_estimate": 126.0,
+            "currency": "USD"
+          }
+        ],
+        "totals": {
+          "paint_total_purchase_gallons": 3.0,
+          "paint_cost_total": 126.0,
+          "primer_needed_gallons_estimate": 0.0,
+          "primer_purchase_recommendation": {
+            "gallons": 0,
+            "quarts": 0,
+            "total_gallons": 0.0
+          },
+          "primer_cost_total": 0.0,
+          "supplies_cost_total": 55.0,
+          "labor_cost_total": 297.5,
+          "labor_hours_estimate": 8.5,
+          "total_estimated_cost": 478.5,
+          "currency": "USD"
+        },
+        "time_estimate_simple": "2 days (prep + 2 coats + drying between coats)"
+      }
+    },
+    {
+      "index": 3,
+      "type": "single",
+      "image": "03_single.jpg",
+      "colors": [
+        {
+          "name": "Terra Cotta",
+          "hex": "#C6694F",
+          "role": "all_walls",
+          "area_percent": 100,
+          "why": "A rich, earthy orange that adds depth and vibrancy, bringing warmth that contrasts with the existing shade."
+        }
+      ],
+      "layout": {},
+      "estimate_us": {
+        "assumptions_used": {
+          "wall_area_sqft": 430.0,
+          "coats": 2,
+          "coverage_sqft_per_gallon_per_coat": 350.0,
+          "waste_factor": 1.12,
+          "primer_needed": false,
+          "currency": "USD",
+          "paint_price_per_gallon": 42.0,
+          "primer_price_per_gallon": 22.0,
+          "supplies_flat_cost": 55.0,
+          "labor_mode": "hourly"
+        },
+        "quantities_by_color": [
+          {
+            "name": "Terra Cotta",
+            "hex": "#C6694F",
+            "role": "all_walls",
+            "area_percent": 100,
+            "wall_area_sqft": 430.0,
+            "paint_needed_gallons_estimate": 2.75,
+            "purchase_recommendation": {
+              "gallons": 3,
+              "quarts": 0,
+              "total_gallons": 3.0
+            },
+            "paint_cost_estimate": 126.0,
+            "currency": "USD"
+          }
+        ],
+        "totals": {
+          "paint_total_purchase_gallons": 3.0,
+          "paint_cost_total": 126.0,
+          "primer_needed_gallons_estimate": 0.0,
+          "primer_purchase_recommendation": {
+            "gallons": 0,
+            "quarts": 0,
+            "total_gallons": 0.0
+          },
+          "primer_cost_total": 0.0,
+          "supplies_cost_total": 55.0,
+          "labor_cost_total": 297.5,
+          "labor_hours_estimate": 8.5,
+          "total_estimated_cost": 478.5,
+          "currency": "USD"
+        },
+        "time_estimate_simple": "2 days (prep + 2 coats + drying between coats)"
+      }
+    },
+    {
+      "index": 4,
+      "type": "single",
+      "image": "04_single.jpg",
+      "colors": [
+        {
+          "name": "Dusty Rose",
+          "hex": "#B3747F",
+          "role": "all_walls",
+          "area_percent": 100,
+          "why": "A soft, muted pink that adds warmth and elegance, offering a clear contrast to the original green-tinged walls."
+        }
+      ],
+      "layout": {},
+      "estimate_us": {
+        "assumptions_used": {
+          "wall_area_sqft": 430.0,
+          "coats": 2,
+          "coverage_sqft_per_gallon_per_coat": 350.0,
+          "waste_factor": 1.12,
+          "primer_needed": false,
+          "currency": "USD",
+          "paint_price_per_gallon": 42.0,
+          "primer_price_per_gallon": 22.0,
+          "supplies_flat_cost": 55.0,
+          "labor_mode": "hourly"
+        },
+        "quantities_by_color": [
+          {
+            "name": "Dusty Rose",
+            "hex": "#B3747F",
+            "role": "all_walls",
+            "area_percent": 100,
+            "wall_area_sqft": 430.0,
+            "paint_needed_gallons_estimate": 2.75,
+            "purchase_recommendation": {
+              "gallons": 3,
+              "quarts": 0,
+              "total_gallons": 3.0
+            },
+            "paint_cost_estimate": 126.0,
+            "currency": "USD"
+          }
+        ],
+        "totals": {
+          "paint_total_purchase_gallons": 3.0,
+          "paint_cost_total": 126.0,
+          "primer_needed_gallons_estimate": 0.0,
+          "primer_purchase_recommendation": {
+            "gallons": 0,
+            "quarts": 0,
+            "total_gallons": 0.0
+          },
+          "primer_cost_total": 0.0,
+          "supplies_cost_total": 55.0,
+          "labor_cost_total": 297.5,
+          "labor_hours_estimate": 8.5,
+          "total_estimated_cost": 478.5,
+          "currency": "USD"
+        },
+        "time_estimate_simple": "2 days (prep + 2 coats + drying between coats)"
+      }
+    },
+    {
+      "index": 5,
+      "type": "single",
+      "image": "05_single.jpg",
+      "colors": [
+        {
+          "name": "Charcoal Gray",
+          "hex": "#4A4A4A",
+          "role": "all_walls",
+          "area_percent": 100,
+          "why": "A sleek, modern dark gray offering a sophisticated and grounded atmosphere, distinctly different from the pale original color."
+        }
+      ],
+      "layout": {},
+      "estimate_us": {
+        "assumptions_used": {
+          "wall_area_sqft": 430.0,
+          "coats": 2,
+          "coverage_sqft_per_gallon_per_coat": 350.0,
+          "waste_factor": 1.12,
+          "primer_needed": false,
+          "currency": "USD",
+          "paint_price_per_gallon": 42.0,
+          "primer_price_per_gallon": 22.0,
+          "supplies_flat_cost": 55.0,
+          "labor_mode": "hourly"
+        },
+        "quantities_by_color": [
+          {
+            "name": "Charcoal Gray",
+            "hex": "#4A4A4A",
+            "role": "all_walls",
+            "area_percent": 100,
+            "wall_area_sqft": 430.0,
+            "paint_needed_gallons_estimate": 2.75,
+            "purchase_recommendation": {
+              "gallons": 3,
+              "quarts": 0,
+              "total_gallons": 3.0
+            },
+            "paint_cost_estimate": 126.0,
+            "currency": "USD"
+          }
+        ],
+        "totals": {
+          "paint_total_purchase_gallons": 3.0,
+          "paint_cost_total": 126.0,
+          "primer_needed_gallons_estimate": 0.0,
+          "primer_purchase_recommendation": {
+            "gallons": 0,
+            "quarts": 0,
+            "total_gallons": 0.0
+          },
+          "primer_cost_total": 0.0,
+          "supplies_cost_total": 55.0,
+          "labor_cost_total": 297.5,
+          "labor_hours_estimate": 8.5,
+          "total_estimated_cost": 478.5,
+          "currency": "USD"
+        },
+        "time_estimate_simple": "2 days (prep + 2 coats + drying between coats)"
+      }
+    },
+    {
+      "index": 6,
+      "type": "single",
+      "image": "06_single.jpg",
+      "colors": [
+        {
+          "name": "Muted Mustard",
+          "hex": "#BDA14A",
+          "role": "all_walls",
+          "area_percent": 100,
+          "why": "A warm golden mustard that offers a vibrant yet natural alternative to the existing cool greenish walls."
+        }
+      ],
+      "layout": {},
+      "estimate_us": {
+        "assumptions_used": {
+          "wall_area_sqft": 430.0,
+          "coats": 2,
+          "coverage_sqft_per_gallon_per_coat": 350.0,
+          "waste_factor": 1.12,
+          "primer_needed": false,
+          "currency": "USD",
+          "paint_price_per_gallon": 42.0,
+          "primer_price_per_gallon": 22.0,
+          "supplies_flat_cost": 55.0,
+          "labor_mode": "hourly"
+        },
+        "quantities_by_color": [
+          {
+            "name": "Muted Mustard",
+            "hex": "#BDA14A",
+            "role": "all_walls",
+            "area_percent": 100,
+            "wall_area_sqft": 430.0,
+            "paint_needed_gallons_estimate": 2.75,
+            "purchase_recommendation": {
+              "gallons": 3,
+              "quarts": 0,
+              "total_gallons": 3.0
+            },
+            "paint_cost_estimate": 126.0,
+            "currency": "USD"
+          }
+        ],
+        "totals": {
+          "paint_total_purchase_gallons": 3.0,
+          "paint_cost_total": 126.0,
+          "primer_needed_gallons_estimate": 0.0,
+          "primer_purchase_recommendation": {
+            "gallons": 0,
+            "quarts": 0,
+            "total_gallons": 0.0
+          },
+          "primer_cost_total": 0.0,
+          "supplies_cost_total": 55.0,
+          "labor_cost_total": 297.5,
+          "labor_hours_estimate": 8.5,
+          "total_estimated_cost": 478.5,
+          "currency": "USD"
+        },
+        "time_estimate_simple": "2 days (prep + 2 coats + drying between coats)"
+      }
+    },
+    {
+      "index": 7,
+      "type": "single",
+      "image": "07_single.jpg",
+      "colors": [
+        {
+          "name": "Charcoal Slate",
+          "hex": "#3E4650",
+          "role": "all_walls",
+          "area_percent": 100,
+          "why": "A subtle pastel purple undertone that creates a calming atmosphere and clearly differs from the current wall color. (Adjusted for better contrast.)"
+        }
+      ],
+      "layout": {},
+      "estimate_us": {
+        "assumptions_used": {
+          "wall_area_sqft": 430.0,
+          "coats": 2,
+          "coverage_sqft_per_gallon_per_coat": 350.0,
+          "waste_factor": 1.12,
+          "primer_needed": false,
+          "currency": "USD",
+          "paint_price_per_gallon": 42.0,
+          "primer_price_per_gallon": 22.0,
+          "supplies_flat_cost": 55.0,
+          "labor_mode": "hourly"
+        },
+        "quantities_by_color": [
+          {
+            "name": "Charcoal Slate",
+            "hex": "#3E4650",
+            "role": "all_walls",
+            "area_percent": 100,
+            "wall_area_sqft": 430.0,
+            "paint_needed_gallons_estimate": 2.75,
+            "purchase_recommendation": {
+              "gallons": 3,
+              "quarts": 0,
+              "total_gallons": 3.0
+            },
+            "paint_cost_estimate": 126.0,
+            "currency": "USD"
+          }
+        ],
+        "totals": {
+          "paint_total_purchase_gallons": 3.0,
+          "paint_cost_total": 126.0,
+          "primer_needed_gallons_estimate": 0.0,
+          "primer_purchase_recommendation": {
+            "gallons": 0,
+            "quarts": 0,
+            "total_gallons": 0.0
+          },
+          "primer_cost_total": 0.0,
+          "supplies_cost_total": 55.0,
+          "labor_cost_total": 297.5,
+          "labor_hours_estimate": 8.5,
+          "total_estimated_cost": 478.5,
+          "currency": "USD"
+        },
+        "time_estimate_simple": "2 days (prep + 2 coats + drying between coats)"
+      }
+    },
+    {
+      "index": 8,
+      "type": "pro_2to3",
+      "image": "08_pro_2to3.jpg",
+      "colors": [
+        {
+          "name": "Warm Cream",
+          "hex": "#F1E7D0",
+          "role": "main",
+          "area_percent": 70,
+          "why": "A light, neutral base that brightens the space and adds warmth while enhancing natural light."
+        },
+        {
+          "name": "Soft Olive",
+          "hex": "#80875E",
+          "role": "accent",
+          "area_percent": 30,
+          "why": "An earthy green accent wall adds richness and harmonizes with the warm base tone."
+        }
+      ],
+      "layout": {
+        "accent_wall": "wall behind the main sofa or seating area"
+      },
+      "estimate_us": {
+        "assumptions_used": {
+          "wall_area_sqft": 430.0,
+          "coats": 2,
+          "coverage_sqft_per_gallon_per_coat": 350.0,
+          "waste_factor": 1.12,
+          "primer_needed": false,
+          "currency": "USD",
+          "paint_price_per_gallon": 42.0,
+          "primer_price_per_gallon": 22.0,
+          "supplies_flat_cost": 55.0,
+          "labor_mode": "hourly"
+        },
+        "quantities_by_color": [
+          {
+            "name": "Warm Cream",
+            "hex": "#F1E7D0",
+            "role": "main",
+            "area_percent": 70,
+            "wall_area_sqft": 301.0,
+            "paint_needed_gallons_estimate": 1.93,
+            "purchase_recommendation": {
+              "gallons": 2,
+              "quarts": 0,
+              "total_gallons": 2.0
+            },
+            "paint_cost_estimate": 84.0,
+            "currency": "USD"
+          },
+          {
+            "name": "Soft Olive",
+            "hex": "#80875E",
+            "role": "accent",
+            "area_percent": 30,
+            "wall_area_sqft": 129.0,
+            "paint_needed_gallons_estimate": 0.83,
+            "purchase_recommendation": {
+              "gallons": 1,
+              "quarts": 0,
+              "total_gallons": 1.0
+            },
+            "paint_cost_estimate": 42.0,
+            "currency": "USD"
+          }
+        ],
+        "totals": {
+          "paint_total_purchase_gallons": 3.0,
+          "paint_cost_total": 126.0,
+          "primer_needed_gallons_estimate": 0.0,
+          "primer_purchase_recommendation": {
+            "gallons": 0,
+            "quarts": 0,
+            "total_gallons": 0.0
+          },
+          "primer_cost_total": 0.0,
+          "supplies_cost_total": 55.0,
+          "labor_cost_total": 297.5,
+          "labor_hours_estimate": 8.5,
+          "total_estimated_cost": 478.5,
+          "currency": "USD"
+        },
+        "time_estimate_simple": "2 days (prep + 2 coats + drying between coats)"
+      }
+    },
+    {
+      "index": 9,
+      "type": "pro_2to3",
+      "image": "09_pro_2to3.jpg",
+      "colors": [
+        {
+          "name": "Charcoal Slate",
+          "hex": "#3E4650",
+          "role": "main",
+          "area_percent": 65,
+          "why": "A clean, cool neutral gray that delivers a modern, fresh look. (Adjusted for clear contrast.)"
+        },
+        {
+          "name": "Charcoal Slate",
+          "hex": "#3E4650",
+          "role": "accent",
+          "area_percent": 25,
+          "why": "Soft blue accent wall provides a calming, visually appealing contrast. (Adjusted for clear contrast.)"
+        },
+        {
+          "name": "Soft White",
+          "hex": "#F5F6F7",
+          "role": "trim",
+          "area_percent": 10,
+          "why": "White trim and ceiling create a crisp, polished finish."
+        }
+      ],
+      "layout": {
+        "accent_wall": "wall with window or light source to enhance depth"
+      },
+      "estimate_us": {
+        "assumptions_used": {
+          "wall_area_sqft": 430.0,
+          "coats": 2,
+          "coverage_sqft_per_gallon_per_coat": 350.0,
+          "waste_factor": 1.12,
+          "primer_needed": false,
+          "currency": "USD",
+          "paint_price_per_gallon": 42.0,
+          "primer_price_per_gallon": 22.0,
+          "supplies_flat_cost": 55.0,
+          "labor_mode": "hourly"
+        },
+        "quantities_by_color": [
+          {
+            "name": "Charcoal Slate",
+            "hex": "#3E4650",
+            "role": "main",
+            "area_percent": 65,
+            "wall_area_sqft": 279.5,
+            "paint_needed_gallons_estimate": 1.79,
+            "purchase_recommendation": {
+              "gallons": 2,
+              "quarts": 0,
+              "total_gallons": 2.0
+            },
+            "paint_cost_estimate": 84.0,
+            "currency": "USD"
+          },
+          {
+            "name": "Charcoal Slate",
+            "hex": "#3E4650",
+            "role": "accent",
+            "area_percent": 25,
+            "wall_area_sqft": 107.5,
+            "paint_needed_gallons_estimate": 0.69,
+            "purchase_recommendation": {
+              "gallons": 0,
+              "quarts": 3,
+              "total_gallons": 0.75
+            },
+            "paint_cost_estimate": 31.5,
+            "currency": "USD"
+          },
+          {
+            "name": "Soft White",
+            "hex": "#F5F6F7",
+            "role": "trim",
+            "area_percent": 10,
+            "wall_area_sqft": 43.0,
+            "paint_needed_gallons_estimate": 0.28,
+            "purchase_recommendation": {
+              "gallons": 0,
+              "quarts": 2,
+              "total_gallons": 0.5
+            },
+            "paint_cost_estimate": 21.0,
+            "currency": "USD"
+          }
+        ],
+        "totals": {
+          "paint_total_purchase_gallons": 3.25,
+          "paint_cost_total": 136.5,
+          "primer_needed_gallons_estimate": 0.0,
+          "primer_purchase_recommendation": {
+            "gallons": 0,
+            "quarts": 0,
+            "total_gallons": 0.0
+          },
+          "primer_cost_total": 0.0,
+          "supplies_cost_total": 55.0,
+          "labor_cost_total": 297.5,
+          "labor_hours_estimate": 8.5,
+          "total_estimated_cost": 489.0,
+          "currency": "USD"
+        },
+        "time_estimate_simple": "2 days (prep + 2 coats + drying between coats)"
+      }
+    },
+    {
+      "index": 10,
+      "type": "creative",
+      "image": "10_creative.jpg",
+      "colors": [
+        {
+          "name": "Charcoal Slate",
+          "hex": "#3E4650",
+          "role": "accent panel",
+          "area_percent": 15,
+          "why": "Introduces gentle warmth and subtle contrast. (Adjusted for clear contrast.)"
+        },
+        {
+          "name": "Smoky Blue",
+          "hex": "#5B7D8A",
+          "role": "accent panel",
+          "area_percent": 15,
+          "why": "Offers a balanced calm and cool tone."
+        },
+        {
+          "name": "Warm Ivory",
+          "hex": "#F2E8DA",
+          "role": "main wall",
+          "area_percent": 40,
+          "why": "Maintains a bright and airy overall atmosphere."
+        },
+        {
+          "name": "Deep Charcoal",
+          "hex": "#3F3F3F",
+          "role": "trim",
+          "area_percent": 10,
+          "why": "Provides sharp contrast for framing and grounding elements."
+        },
+        {
+          "name": "Charcoal Slate",
+          "hex": "#3E4650",
+          "role": "secondary accent",
+          "area_percent": 20,
+          "why": "Reflects natural tones and adds interest without clashing. (Adjusted for clear contrast.)"
+        }
+      ],
+      "layout": {},
+      "estimate_us": {
+        "assumptions_used": {
+          "wall_area_sqft": 430.0,
+          "coats": 2,
+          "coverage_sqft_per_gallon_per_coat": 350.0,
+          "waste_factor": 1.12,
+          "primer_needed": false,
+          "currency": "USD",
+          "paint_price_per_gallon": 42.0,
+          "primer_price_per_gallon": 22.0,
+          "supplies_flat_cost": 55.0,
+          "labor_mode": "hourly"
+        },
+        "quantities_by_color": [
+          {
+            "name": "Charcoal Slate",
+            "hex": "#3E4650",
+            "role": "accent panel",
+            "area_percent": 15,
+            "wall_area_sqft": 64.5,
+            "paint_needed_gallons_estimate": 0.41,
+            "purchase_recommendation": {
+              "gallons": 0,
+              "quarts": 2,
+              "total_gallons": 0.5
+            },
+            "paint_cost_estimate": 21.0,
+            "currency": "USD"
+          },
+          {
+            "name": "Smoky Blue",
+            "hex": "#5B7D8A",
+            "role": "accent panel",
+            "area_percent": 15,
+            "wall_area_sqft": 64.5,
+            "paint_needed_gallons_estimate": 0.41,
+            "purchase_recommendation": {
+              "gallons": 0,
+              "quarts": 2,
+              "total_gallons": 0.5
+            },
+            "paint_cost_estimate": 21.0,
+            "currency": "USD"
+          },
+          {
+            "name": "Warm Ivory",
+            "hex": "#F2E8DA",
+            "role": "main wall",
+            "area_percent": 40,
+            "wall_area_sqft": 172.0,
+            "paint_needed_gallons_estimate": 1.1,
+            "purchase_recommendation": {
+              "gallons": 1,
+              "quarts": 1,
+              "total_gallons": 1.25
+            },
+            "paint_cost_estimate": 52.5,
+            "currency": "USD"
+          },
+          {
+            "name": "Deep Charcoal",
+            "hex": "#3F3F3F",
+            "role": "trim",
+            "area_percent": 10,
+            "wall_area_sqft": 43.0,
+            "paint_needed_gallons_estimate": 0.28,
+            "purchase_recommendation": {
+              "gallons": 0,
+              "quarts": 2,
+              "total_gallons": 0.5
+            },
+            "paint_cost_estimate": 21.0,
+            "currency": "USD"
+          },
+          {
+            "name": "Charcoal Slate",
+            "hex": "#3E4650",
+            "role": "secondary accent",
+            "area_percent": 20,
+            "wall_area_sqft": 86.0,
+            "paint_needed_gallons_estimate": 0.55,
+            "purchase_recommendation": {
+              "gallons": 0,
+              "quarts": 3,
+              "total_gallons": 0.75
+            },
+            "paint_cost_estimate": 31.5,
+            "currency": "USD"
+          }
+        ],
+        "totals": {
+          "paint_total_purchase_gallons": 3.5,
+          "paint_cost_total": 147.0,
+          "primer_needed_gallons_estimate": 0.0,
+          "primer_purchase_recommendation": {
+            "gallons": 0,
+            "quarts": 0,
+            "total_gallons": 0.0
+          },
+          "primer_cost_total": 0.0,
+          "supplies_cost_total": 55.0,
+          "labor_cost_total": 297.5,
+          "labor_hours_estimate": 8.5,
+          "total_estimated_cost": 499.5,
+          "currency": "USD"
+        },
+        "time_estimate_simple": "2 days (prep + 2 coats + drying between coats)"
+      }
+    }
+  ],
+  "store_equivalents": {
+    "notes": "These are approximate equivalent colors from popular paint brands, matched visually to the provided HEX values. Actual paint may vary due to displays, lighting, sheen, and production batches. Sampling before final purchase is highly recommended.",
+    "brands_included": [
+      "sherwin_williams",
+      "benjamin_moore",
+      "behr",
+      "ppg",
+      "valspar"
+    ],
+    "colors": [
+      {
+        "hex": "#8B7E74",
+        "original_name": "Soft Warm Taupe",
+        "equivalents": {
+          "sherwin_williams": {
+            "name": "Balanced Beige",
+            "code": "SW 7037",
+            "closest_match": true
+          },
+          "benjamin_moore": {
+            "name": "Manchester Tan",
+            "code": "HC-81",
+            "closest_match": true
+          },
+          "behr": {
+            "name": "Bread",
+            "code": "N370-3",
+            "closest_match": true
+          },
+          "ppg": {
+            "name": "Natural Fawn",
+            "code": "PPG1009-4",
+            "closest_match": true
+          },
+          "valspar": {
+            "name": "Cafe Olio",
+            "code": "3007-8A",
+            "closest_match": true
+          }
+        },
+        "what_to_say_in_store": [
+          "I\u2019m looking for the closest match to HEX #8B7E74",
+          "I prefer eggshell finish for durable, washable walls",
+          "Please prepare a sample or quart for testing"
+        ]
+      },
+      {
+        "hex": "#6A7F94",
+        "original_name": "Slate Blue",
+        "equivalents": {
+          "sherwin_williams": {
+            "name": "Rainwashed",
+            "code": "SW 6211",
+            "closest_match": true
+          },
+          "benjamin_moore": {
+            "name": "Blue Gray",
+            "code": "2138-40",
+            "closest_match": true
+          },
+          "behr": {
+            "name": "Silver Bullet",
+            "code": "N500-5",
+            "closest_match": true
+          },
+          "ppg": {
+            "name": "Blue Shadow",
+            "code": "PPG1123-5",
+            "closest_match": true
+          },
+          "valspar": {
+            "name": "Slate Dock",
+            "code": "4003-8C",
+            "closest_match": true
+          }
+        },
+        "what_to_say_in_store": [
+          "I\u2019m looking for the closest match to HEX #6A7F94",
+          "I prefer eggshell finish for durable, washable walls",
+          "Please prepare a sample or quart for testing"
+        ]
+      },
+      {
+        "hex": "#C6694F",
+        "original_name": "Terra Cotta",
+        "equivalents": {
+          "sherwin_williams": {
+            "name": "Cavern Clay",
+            "code": "SW 7701",
+            "closest_match": true
+          },
+          "benjamin_moore": {
+            "name": "Canyon Ridge",
+            "code": "2173-30",
+            "closest_match": true
+          },
+          "behr": {
+            "name": "Terra Cotta Tile",
+            "code": "S-H-430",
+            "closest_match": true
+          },
+          "ppg": {
+            "name": "Clay Oven",
+            "code": "PPG1154-6",
+            "closest_match": true
+          },
+          "valspar": {
+            "name": "Enchanted Rust",
+            "code": "4007-7A",
+            "closest_match": true
+          }
+        },
+        "what_to_say_in_store": [
+          "I\u2019m looking for the closest match to HEX #C6694F",
+          "I prefer eggshell finish for durable, washable walls",
+          "Please prepare a sample or quart for testing"
+        ]
+      },
+      {
+        "hex": "#B3747F",
+        "original_name": "Dusty Rose",
+        "equivalents": {
+          "sherwin_williams": {
+            "name": "Rosy Outlook",
+            "code": "SW 6315",
+            "closest_match": true
+          },
+          "benjamin_moore": {
+            "name": "Antique Rose",
+            "code": "2086-40",
+            "closest_match": true
+          },
+          "behr": {
+            "name": "Vintage Pink",
+            "code": "S-H-210",
+            "closest_match": true
+          },
+          "ppg": {
+            "name": "Dusty Blush",
+            "code": "PPG1052-6",
+            "closest_match": true
+          },
+          "valspar": {
+            "name": "Blushing Beauty",
+            "code": "3009-7B",
+            "closest_match": true
+          }
+        },
+        "what_to_say_in_store": [
+          "I\u2019m looking for the closest match to HEX #B3747F",
+          "I prefer eggshell finish for durable, washable walls",
+          "Please prepare a sample or quart for testing"
+        ]
+      },
+      {
+        "hex": "#4A4A4A",
+        "original_name": "Charcoal Gray",
+        "equivalents": {
+          "sherwin_williams": {
+            "name": "Iron Ore",
+            "code": "SW 7069",
+            "closest_match": true
+          },
+          "benjamin_moore": {
+            "name": "Kendall Charcoal",
+            "code": "HC-166",
+            "closest_match": true
+          },
+          "behr": {
+            "name": "Carbon",
+            "code": "N510-7",
+            "closest_match": true
+          },
+          "ppg": {
+            "name": "Iron Gate",
+            "code": "PPG1007-7",
+            "closest_match": true
+          },
+          "valspar": {
+            "name": "Darkroom",
+            "code": "4005-8B",
+            "closest_match": true
+          }
+        },
+        "what_to_say_in_store": [
+          "I\u2019m looking for the closest match to HEX #4A4A4A",
+          "I prefer eggshell finish for durable, washable walls",
+          "Please prepare a sample or quart for testing"
+        ]
+      },
+      {
+        "hex": "#BDA14A",
+        "original_name": "Muted Mustard",
+        "equivalents": {
+          "sherwin_williams": {
+            "name": "Friendly Yellow",
+            "code": "SW 6682",
+            "closest_match": true
+          },
+          "benjamin_moore": {
+            "name": "Sulfur Spring",
+            "code": "CSP-710",
+            "closest_match": true
+          },
+          "behr": {
+            "name": "Mellow Yellow",
+            "code": "P280-5",
+            "closest_match": true
+          },
+          "ppg": {
+            "name": "Sunlit Sage",
+            "code": "PPG1121-5",
+            "closest_match": true
+          },
+          "valspar": {
+            "name": "Golden Bounty",
+            "code": "2006-6A",
+            "closest_match": true
+          }
+        },
+        "what_to_say_in_store": [
+          "I\u2019m looking for the closest match to HEX #BDA14A",
+          "I prefer eggshell finish for durable, washable walls",
+          "Please prepare a sample or quart for testing"
+        ]
+      },
+      {
+        "hex": "#3E4650",
+        "original_name": "Charcoal Slate",
+        "equivalents": {
+          "sherwin_williams": {
+            "name": "Slate Tile",
+            "code": "SW 7623",
+            "closest_match": true
+          },
+          "benjamin_moore": {
+            "name": "Castleton Slate",
+            "code": "HC-165",
+            "closest_match": true
+          },
+          "behr": {
+            "name": "Steel Wool",
+            "code": "N520-6",
+            "closest_match": true
+          },
+          "ppg": {
+            "name": "Stormy Weather",
+            "code": "PPG1009-5",
+            "closest_match": true
+          },
+          "valspar": {
+            "name": "Smoky Slate",
+            "code": "4006-8C",
+            "closest_match": true
+          }
+        },
+        "what_to_say_in_store": [
+          "I\u2019m looking for the closest match to HEX #3E4650",
+          "I prefer eggshell finish for durable, washable walls",
+          "Please prepare a sample or quart for testing"
+        ]
+      },
+      {
+        "hex": "#F1E7D0",
+        "original_name": "Warm Cream",
+        "equivalents": {
+          "sherwin_williams": {
+            "name": "Alpaca",
+            "code": "SW 7022",
+            "closest_match": true
+          },
+          "benjamin_moore": {
+            "name": "Natural Cream",
+            "code": "OC-95",
+            "closest_match": true
+          },
+          "behr": {
+            "name": "Swiss Coffee",
+            "code": "12",
+            "closest_match": true
+          },
+          "ppg": {
+            "name": "Ivory Lace",
+            "code": "PPG1003-1",
+            "closest_match": true
+          },
+          "valspar": {
+            "name": "Cream Light",
+            "code": "7002-3A",
+            "closest_match": true
+          }
+        },
+        "what_to_say_in_store": [
+          "I\u2019m looking for the closest match to HEX #F1E7D0",
+          "I prefer eggshell finish for durable, washable walls",
+          "Please prepare a sample or quart for testing"
+        ]
+      },
+      {
+        "hex": "#80875E",
+        "original_name": "Soft Olive",
+        "equivalents": {
+          "sherwin_williams": {
+            "name": "Sage Green Light",
+            "code": "SW 6178",
+            "closest_match": true
+          },
+          "benjamin_moore": {
+            "name": "Mossy Garden",
+            "code": "1486",
+            "closest_match": true
+          },
+          "behr": {
+            "name": "Olive Tree",
+            "code": "M430-5",
+            "closest_match": true
+          },
+          "ppg": {
+            "name": "Moss Glade",
+            "code": "PPG1050-5",
+            "closest_match": true
+          },
+          "valspar": {
+            "name": "Olive Branch",
+            "code": "6031-5A",
+            "closest_match": true
+          }
+        },
+        "what_to_say_in_store": [
+          "I\u2019m looking for the closest match to HEX #80875E",
+          "I prefer eggshell finish for durable, washable walls",
+          "Please prepare a sample or quart for testing"
+        ]
+      },
+      {
+        "hex": "#F5F6F7",
+        "original_name": "Soft White",
+        "equivalents": {
+          "sherwin_williams": {
+            "name": "Extra White",
+            "code": "SW 7006",
+            "closest_match": true
+          },
+          "benjamin_moore": {
+            "name": "Chantilly Lace",
+            "code": "OC-65",
+            "closest_match": true
+          },
+          "behr": {
+            "name": "Ultra Pure White",
+            "code": "1850",
+            "closest_match": true
+          },
+          "ppg": {
+            "name": "Frost",
+            "code": "PPG1001-1",
+            "closest_match": true
+          },
+          "valspar": {
+            "name": "White On White",
+            "code": "7006-6",
+            "closest_match": true
+          }
+        },
+        "what_to_say_in_store": [
+          "I\u2019m looking for the closest match to HEX #F5F6F7",
+          "I prefer eggshell finish for durable, washable walls",
+          "Please prepare a sample or quart for testing"
+        ]
+      },
+      {
+        "hex": "#5B7D8A",
+        "original_name": "Smoky Blue",
+        "equivalents": {
+          "sherwin_williams": {
+            "name": "Mystic Blue",
+            "code": "SW 6233",
+            "closest_match": true
+          },
+          "benjamin_moore": {
+            "name": "Waterloo",
+            "code": "HC-145",
+            "closest_match": true
+          },
+          "behr": {
+            "name": "Steel Blue",
+            "code": "M490-5",
+            "closest_match": true
+          },
+          "ppg": {
+            "name": "Blue Ghost",
+            "code": "PPG1142-5",
+            "closest_match": true
+          },
+          "valspar": {
+            "name": "Blue Agave",
+            "code": "4004-6C",
+            "closest_match": true
+          }
+        },
+        "what_to_say_in_store": [
+          "I\u2019m looking for the closest match to HEX #5B7D8A",
+          "I prefer eggshell finish for durable, washable walls",
+          "Please prepare a sample or quart for testing"
+        ]
+      },
+      {
+        "hex": "#F2E8DA",
+        "original_name": "Warm Ivory",
+        "equivalents": {
+          "sherwin_williams": {
+            "name": "Ivory White",
+            "code": "SW 6116",
+            "closest_match": true
+          },
+          "benjamin_moore": {
+            "name": "White Dove",
+            "code": "OC-17",
+            "closest_match": true
+          },
+          "behr": {
+            "name": "Cameo White",
+            "code": "N220-1",
+            "closest_match": true
+          },
+          "ppg": {
+            "name": "Muted Snow",
+            "code": "PPG1113-1",
+            "closest_match": true
+          },
+          "valspar": {
+            "name": "Soft Ivory",
+            "code": "7001-3",
+            "closest_match": true
+          }
+        },
+        "what_to_say_in_store": [
+          "I\u2019m looking for the closest match to HEX #F2E8DA",
+          "I prefer eggshell finish for durable, washable walls",
+          "Please prepare a sample or quart for testing"
+        ]
+      },
+      {
+        "hex": "#3F3F3F",
+        "original_name": "Deep Charcoal",
+        "equivalents": {
+          "sherwin_williams": {
+            "name": "Peppercorn",
+            "code": "SW 7674",
+            "closest_match": true
+          },
+          "benjamin_moore": {
+            "name": "Cheating Heart",
+            "code": "2124-10",
+            "closest_match": true
+          },
+          "behr": {
+            "name": "Dark Pewter",
+            "code": "N510-6",
+            "closest_match": true
+          },
+          "ppg": {
+            "name": "Ebony Mask",
+            "code": "PPG1015-6",
+            "closest_match": true
+          },
+          "valspar": {
+            "name": "Thundercloud",
+            "code": "4007-9B",
+            "closest_match": true
+          }
+        },
+        "what_to_say_in_store": [
+          "I\u2019m looking for the closest match to HEX #3F3F3F",
+          "I prefer eggshell finish for durable, washable walls",
+          "Please prepare a sample or quart for testing"
+        ]
+      }
+    ],
+    "how_to_get_best_match": [
+      "Purchase a sample or quart first and test on two wall areas",
+      "Observe the color in both daylight and artificial lighting",
+      "Note that paint sheen affects appearance: matte can look lighter, satin deeper",
+      "If uncertain, compare with a physical swatch or printed sample rather than a screen"
+    ]
+  },
+  "customer_value": {
+    "global_notes": {
+      "how_to_buy_exact_color": "Bring the HEX code or paint name to your paint retailer and ask for the closest match, preferably in eggshell finish for durable, washable interior walls. Always test a sample or quart before proceeding with the full purchase.",
+      "multi_color_note": "Purchase samples of each color and test them directly on your walls under different lighting conditions. Label each sample with color name, HEX code, and intended wall area to ensure clear application.",
+      "disclaimer": "Colors may appear differently depending on lighting, sheen, and batch variations; testing samples is strongly recommended before final selection."
+    },
+    "by_image": [
+      {
+        "index": 1,
+        "recommended_paint_type": "washable interior acrylic/latex",
+        "recommended_finish": "Eggshell finish offers a subtle sheen that balances washability and effectively conceals wall imperfections, ideal for living rooms and bedrooms.",
+        "where_to_buy": {
+          "store_types": [
+            "Sherwin-Williams",
+            "Benjamin Moore dealer",
+            "Home Depot (Behr)",
+            "Lowe's (Valspar)",
+            "Local paint store"
+          ],
+          "what_to_ask_for": [
+            "closest match to HEX #8B7E74",
+            "washable interior wall paint",
+            "Eggshell finish",
+            "sample or quart for testing"
+          ]
+        },
+        "exact_buy_list": {
+          "per_color": [
+            {
+              "hex": "#8B7E74",
+              "name": "Soft Warm Taupe",
+              "purchase": {
+                "gallons": 3,
+                "quarts": 0,
+                "total_gallons": 3.0
+              },
+              "store_equivalents": {
+                "sherwin_williams": "Balanced Beige SW 7037",
+                "benjamin_moore": "Manchester Tan HC-81",
+                "behr": "Bread N370-3",
+                "ppg": "Natural Fawn PPG1009-4",
+                "valspar": "Cafe Olio 3007-8A"
+              }
+            }
+          ],
+          "primer": {
+            "needed": false,
+            "purchase": {
+              "gallons": 0,
+              "quarts": 0,
+              "total_gallons": 0.0
+            }
+          },
+          "supplies": [
+            "tape",
+            "plastic sheeting",
+            "roller covers",
+            "angled paintbrush",
+            "spackle",
+            "sandpaper",
+            "caulk"
+          ]
+        },
+        "timeline": {
+          "estimated_time": "2 days (prep + 2 coats + drying between coats)",
+          "prep_steps": [
+            "Remove or cover furniture with plastic",
+            "Tape off trim, outlets, and fixtures",
+            "Clean walls and fill holes or cracks with spackle",
+            "Sand smooth once spackle is dry",
+            "Apply caulk to gaps as needed"
+          ],
+          "paint_steps": [
+            "Apply first coat evenly using roller and angled brush for edges",
+            "Allow sufficient drying (2-4 hours depending on temperature and humidity)",
+            "Apply second coat evenly"
+          ],
+          "drying_notes": "Ensure good ventilation and allow paint to fully dry before moving furniture back or decorating."
+        },
+        "cost_breakdown": {
+          "paint_cost_total": 126,
+          "primer_cost_total": 0,
+          "supplies_cost_total": 55,
+          "labor_cost_total": 297.5,
+          "total_estimated_cost": 478.5,
+          "currency": "USD"
+        },
+        "quality_tips": [
+          "Start by buying a sample or quart and test on two wall sections under varied lighting",
+          "Use high-quality rollers and brushes to avoid streaks and ensure smooth coverage",
+          "Maintain a wet edge during painting to prevent lap marks"
+        ],
+        "common_mistakes": [
+          "Skipping surface preparation such as cleaning and sanding can cause poor adhesion and uneven finish",
+          "Insufficient drying time between coats can lead to peeling or uneven texture",
+          "Underestimating paint quantity and running out mid-project"
+        ],
+        "care_after_painting": [
+          "Wait at least 2 weeks before cleaning walls to allow full paint curing",
+          "Use mild soap and a soft sponge for washing painted surfaces",
+          "Touch up any chips or marks promptly to keep a fresh appearance"
+        ]
+      }
+    ]
+  }
+};
+
+    // Build variants list from data (so you only maintain JSON)
+    const variants = repaintData.images.map(img => ({
+      label: `Option ${img.index}`,
+      imageUrl: `./pictures/${img.image}`,
+      raw: img
+    }));
+
+    const baseImg = document.getElementById("baseImg");
+    const variantImg = document.getElementById("variantImg");
+    const slider = document.getElementById("slider");
+    const compareCard = document.getElementById("compareCard");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    const counter = document.getElementById("counter");
+    const variantLabel = document.getElementById("variantLabel");
+
+    const variantHtml = document.getElementById("variantHtml");
+    const variantMeta = document.getElementById("variantMeta");
+
+    const generalHtml = document.getElementById("generalHtml");
+    const generalMeta = document.getElementById("generalMeta");
+
+    let idx = 0;
+
+    function esc(s){
+      return String(s)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function money(n, currency){
+      const v = Number(n);
+      if (Number.isNaN(v)) return esc(n);
+      return `${currency || "USD"} ${v.toFixed(2)}`;
+    }
+
+    function gallonsText(p){
+      // p = {gallons, quarts, total_gallons}
+      if (!p) return "";
+      const g = Number(p.gallons || 0);
+      const q = Number(p.quarts || 0);
+      const tg = Number(p.total_gallons || 0);
+      const parts = [];
+      if (g) parts.push(`${g} gallon${g===1?"":"s"}`);
+      if (q) parts.push(`${q} quart${q===1?"":"s"}`);
+      if (!parts.length) parts.push("0 gallons");
+      return `${parts.join(" + ")} (total ${tg} gal)`;
+    }
+
+    function findEquivalentsByHex(hex){
+      const item = (repaintData.store_equivalents?.colors || []).find(c => (c.hex || "").toLowerCase() === String(hex).toLowerCase());
+      return item || null;
+    }
+
+    function swatchPill(hex, name){
+      const safeHex = esc(hex);
+      const safeName = esc(name || "");
+      return `<span class="swatch" title="${safeName} ${safeHex}">
+        <span class="box" style="--c:${safeHex}"></span>
+        <span><b>${safeName}</b> ${safeHex}</span>
+      </span>`;
+    }
+
+    function buildGeneral(){
+      const a = repaintData.assumptions_us;
+      const g = repaintData.customer_value?.global_notes || {};
+      const se = repaintData.store_equivalents || {};
+
+      const storeTypes = (a.suggested_store_types || []).map(x => `<li>${esc(x)}</li>`).join("");
+      const matchTips = (se.how_to_get_best_match || []).map(x => `<li>${esc(x)}</li>`).join("");
+
+      generalHtml.innerHTML = `
+        <h3>Project summary</h3>
+        <p class="muted">${esc(repaintData.notes)}</p>
+
+        <div class="hr"></div>
+
+        
+
+        <div class="hr"></div>
+
+        <h3>Where to buy (recommended store types)</h3>
+        <ul>${storeTypes}</ul>
+
+        <div class="hr"></div>
+
+        <h3>How to buy the best match</h3>
+        <p class="muted">${esc(se.notes || "")}</p>
+        <ul>${matchTips}</ul>
+
+        <div class="hr"></div>
+
+        <h3>Client notes</h3>
+        <ul>
+          <li><b>How to buy exact color:</b> ${esc(g.how_to_buy_exact_color || "")}</li>
+          <li><b>Multi-color note:</b> ${esc(g.multi_color_note || "")}</li>
+          <li><b>Disclaimer:</b> ${esc(g.disclaimer || "")}</li>
+        </ul>
+      `; 
+
+      generalMeta.innerHTML = ""; // intentionally empty (no chips in General panel)
+    }
+
+    function buildOptionHtml(img){
+      const est = img.estimate_us;
+      const totals = est?.totals || {};
+      const currency = totals.currency || repaintData.assumptions_us.currency || "USD";
+
+      // Per-image extra (only index 4 has the deep guidance in your data)
+      const extra = (repaintData.customer_value?.by_image || []).find(x => x.index === img.index) || null;
+
+      const layoutBits = [];
+      if (img.layout && img.layout.accent_wall) layoutBits.push(`<li><b>Accent wall location:</b> ${esc(img.layout.accent_wall)}</li>`);
+
+      const colorBlocks = (est?.quantities_by_color || []).map(q => {
+        const eq = findEquivalentsByHex(q.hex);
+        const equivLines = eq ? `
+          <p style="margin-top: 8px; color: var(--muted); font-size: 14px;"><b>If that doesn't work, ask for:</b></p>
+          <ol style="margin: 6px 0 0 18px; padding: 0;">
+            <li><b>Sherwin-Williams:</b> ${esc(eq.equivalents.sherwin_williams.name)} (${esc(eq.equivalents.sherwin_williams.code)})</li>
+            <li><b>Benjamin Moore:</b> ${esc(eq.equivalents.benjamin_moore.name)} (${esc(eq.equivalents.benjamin_moore.code)})</li>
+            <li><b>Behr:</b> ${esc(eq.equivalents.behr.name)} (${esc(eq.equivalents.behr.code)})</li>
+            <li><b>PPG:</b> ${esc(eq.equivalents.ppg.name)} (${esc(eq.equivalents.ppg.code)})</li>
+            <li><b>Valspar:</b> ${esc(eq.equivalents.valspar.name)} (${esc(eq.equivalents.valspar.code)})</li>
+          </ol>
+        ` : `<p class="muted">No store-equivalent mapping found for ${esc(q.hex)}.</p>`;
+
+        const why = (img.colors || []).find(c => c.hex.toLowerCase() === String(q.hex).toLowerCase() && c.role === q.role)?.why
+                 || (img.colors || []).find(c => c.hex.toLowerCase() === String(q.hex).toLowerCase())?.why
+                 || "";
+
+        return `
+          <div class="hr"></div>
+          <h3>Color: ${esc(q.name)} (${esc(q.role)})</h3>
+          <p>${swatchPill(q.hex, q.name)}</p>
+          <h3>What to ask in store</h3>
+          <ul>
+            <li><b>Ask for HEX:</b> ${esc(q.hex)}</li>
+          </ul>
+          ${equivLines}
+          <ul>
+            <li><b>Area:</b> ${esc(q.area_percent)}% (~${esc(q.wall_area_sqft)} sq ft)</li>
+            <li><b>Paint needed (estimate):</b> ${esc(q.paint_needed_gallons_estimate)} gallons</li>
+            <li><b>Purchase recommendation:</b> ${esc(gallonsText(q.purchase_recommendation))}</li>
+            <li><b>Paint cost (this color):</b> ${money(q.paint_cost_estimate, currency)}</li>
+          </ul>
+          <h3>Why this works</h3>
+          <p class="muted">${esc(why)}</p>
+        `;
+      }).join("");
+
+      const whatToSay = (() => {
+        // If single color, use mapping from store_equivalents; otherwise show unique lines per unique hex.
+        const uniqueHex = [...new Set((est?.quantities_by_color || []).map(x => x.hex.toUpperCase()))];
+        const lines = uniqueHex.flatMap(h => {
+          const eq = findEquivalentsByHex(h);
+          return eq?.what_to_say_in_store || [];
+        });
+        // de-dup
+        return [...new Set(lines)].map(x => `<li>${esc(x)}</li>`).join("");
+      })();
+
+      const suppliesList = extra?.exact_buy_list?.supplies
+        ? extra.exact_buy_list.supplies.map(x => `<li>${esc(x)}</li>`).join("")
+        : "";
+
+      const prepSteps = extra?.timeline?.prep_steps
+        ? extra.timeline.prep_steps.map(x => `<li>${esc(x)}</li>`).join("")
+        : "";
+
+      const paintSteps = extra?.timeline?.paint_steps
+        ? extra.timeline.paint_steps.map(x => `<li>${esc(x)}</li>`).join("")
+        : "";
+
+      const qualityTips = extra?.quality_tips
+        ? extra.quality_tips.map(x => `<li>${esc(x)}</li>`).join("")
+        : "";
+
+      const mistakes = extra?.common_mistakes
+        ? extra.common_mistakes.map(x => `<li>${esc(x)}</li>`).join("")
+        : "";
+
+      const care = extra?.care_after_painting
+        ? extra.care_after_painting.map(x => `<li>${esc(x)}</li>`).join("")
+        : "";
+
+      const whereBuyTypes = extra?.where_to_buy?.store_types
+        ? extra.where_to_buy.store_types.map(x => `<li>${esc(x)}</li>`).join("")
+        : "";
+
+      const whereBuyAsk = extra?.where_to_buy?.what_to_ask_for
+        ? extra.where_to_buy.what_to_ask_for.map(x => `<li>${esc(x)}</li>`).join("")
+        : "";
+
+      const layoutSection = layoutBits.length ? `
+        <h3>Layout notes</h3>
+        <ul>${layoutBits.join("")}</ul>
+      ` : "";
+
+      const extraSection = extra ? `
+        <div class="hr"></div>
+        <h3>Recommended paint type & finish (Option ${img.index})</h3>
+        <ul>
+          <li><b>Paint type:</b> ${esc(extra.recommended_paint_type)}</li>
+          <li><b>Finish:</b> ${esc(extra.recommended_finish)}</li>
+        </ul>
+
+        <h3>Where to buy</h3>
+        <ul>${whereBuyTypes}</ul>
+
+        <h3>What to ask for</h3>
+        <ul>${whereBuyAsk}</ul>
+
+        <h3>Exact buy list extras</h3>
+        <ul>
+          <li><b>Primer needed:</b> ${esc(extra.exact_buy_list.primer.needed)}</li>
+          <li><b>Primer purchase:</b> ${esc(gallonsText(extra.exact_buy_list.primer.purchase))}</li>
+        </ul>
+        ${suppliesList ? `<h3>Supplies checklist</h3><ul>${suppliesList}</ul>` : ""}
+
+        <h3>Timeline (detailed)</h3>
+        <ul><li><b>Estimated time:</b> ${esc(extra.timeline.estimated_time)}</li></ul>
+        ${prepSteps ? `<h3>Prep steps</h3><ul>${prepSteps}</ul>` : ""}
+        ${paintSteps ? `<h3>Paint steps</h3><ul>${paintSteps}</ul>` : ""}
+        <p class="muted"><b>Drying notes:</b> ${esc(extra.timeline.drying_notes)}</p>
+
+        ${qualityTips ? `<h3>Quality tips</h3><ul>${qualityTips}</ul>` : ""}
+        ${mistakes ? `<h3>Common mistakes</h3><ul>${mistakes}</ul>` : ""}
+        ${care ? `<h3>Care after painting</h3><ul>${care}</ul>` : ""}
+      ` : "";
+
+      return `
+        <p class="muted"><b>Type:</b> ${esc(img.type)} &nbsp; • &nbsp; <b>Image:</b> ${esc(img.image)}</p>
+        ${layoutSection}
+
+        <h3>What to say in store (works for this option)</h3>
+        <ul>${whatToSay || "<li>Ask for the closest match to the HEX values shown for this option.</li>"}</ul>
+
+        ${colorBlocks}
+
+        <div class="hr"></div>
+
+        <h3>Totals (Option ${img.index})</h3>
+        <ul>
+          <li><b>Paint purchase total:</b> ${esc(totals.paint_total_purchase_gallons)} gallons</li>
+          <li><b>Paint cost total:</b> ${money(totals.paint_cost_total, currency)}</li>
+          <li><b>Primer needed (estimate):</b> ${esc(totals.primer_needed_gallons_estimate)} gallons</li>
+          <li><b>Primer purchase:</b> ${esc(gallonsText(totals.primer_purchase_recommendation))}</li>
+          <li><b>Primer cost total:</b> ${money(totals.primer_cost_total, currency)}</li>
+          <li><b>Supplies cost total:</b> ${money(totals.supplies_cost_total, currency)}</li>
+          <li><b>Labor hours estimate:</b> ${esc(totals.labor_hours_estimate)} hours</li>
+          <li><b>Labor cost total:</b> ${money(totals.labor_cost_total, currency)}</li>
+          <li><b>Total estimated cost:</b> <b>${money(totals.total_estimated_cost, currency)}</b></li>
+        </ul>
+
+        <h3>Time estimate</h3>
+        <p class="muted">${esc(est?.time_estimate_simple || "")}</p>
+
+        ${extraSection}
+      `;
+    }
+
+    function setPos(value){
+      compareCard.style.setProperty("--pos", value + "%");
+    }
+
+    function renderVariant(){
+      const v = variants[idx];
+      const img = v.raw;
+
+      baseImg.src = baseImageUrl;
+      variantImg.src = v.imageUrl;
+
+      variantLabel.textContent = v.label;
+      counter.textContent = `${idx + 1} / ${variants.length}`;
+
+      variantHtml.innerHTML = buildOptionHtml(img);
+
+      // Meta chips (quick glance)
+      variantMeta.innerHTML = "";
+      const totals = img.estimate_us?.totals || {};
+      const currency = totals.currency || repaintData.assumptions_us.currency || "USD";
+      const chips = [
+        `Type: ${img.type}`,
+        `Paint: ${totals.paint_total_purchase_gallons} gal`,
+        `Supplies: ${money(totals.supplies_cost_total, currency)}`,
+        `Labor: ${money(totals.labor_cost_total, currency)} (${totals.labor_hours_estimate} hrs)`,
+        `Total: ${money(totals.total_estimated_cost, currency)}`,
+      ];
+      chips.forEach(t => {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = t;
+        variantMeta.appendChild(chip);
+      });
+
+      // Update active carousel dot
+      updateCarouselDots();
+    }
+
+    // Initialize carousel dots
+    function initCarouselDots(){
+      const dotsContainer = document.getElementById("carouselDots");
+      dotsContainer.innerHTML = "";
+      for (let i = 0; i < variants.length; i++) {
+        const dot = document.createElement("div");
+        dot.className = "dot";
+        if (i === idx) dot.classList.add("active");
+        dot.addEventListener("click", () => {
+          idx = i;
+          renderVariant();
+        });
+        dotsContainer.appendChild(dot);
+      }
+    }
+
+    // Update which dot is active
+    function updateCarouselDots(){
+      const dots = document.querySelectorAll(".carousel-dots .dot");
+      dots.forEach((dot, i) => {
+        if (i === idx) {
+          dot.classList.add("active");
+        } else {
+          dot.classList.remove("active");
+        }
+      });
+    }
+
+    function prev(){
+      idx = (idx - 1 + variants.length) % variants.length;
+      renderVariant();
+    }
+
+    function next(){
+      idx = (idx + 1) % variants.length;
+      renderVariant();
+    }
+
+    // Slider input
+    slider.addEventListener("input", (e) => setPos(Number(e.target.value)));
+
+    // Drag anywhere (mobile friendly)
+    function setFromPointer(clientX){
+      const rect = compareCard.getBoundingClientRect();
+      const x = Math.min(Math.max(clientX - rect.left, 0), rect.width);
+      const percent = (x / rect.width) * 100;
+      slider.value = String(Math.round(percent));
+      setPos(percent);
+    }
+
+    let isDown = false;
+
+    compareCard.addEventListener("pointerdown", (e) => {
+      if (e.target.closest(".navBtn, #zoomBtn")) return;
+      isDown = true;
+      compareCard.setPointerCapture(e.pointerId);
+      setFromPointer(e.clientX);
+    });
+
+    compareCard.addEventListener("pointermove", (e) => {
+      if (!isDown) return;
+      setFromPointer(e.clientX);
+    });
+
+    compareCard.addEventListener("pointerup", () => { isDown = false; });
+    compareCard.addEventListener("pointercancel", () => { isDown = false; });
+
+    // Buttons
+    prevBtn.addEventListener("click", prev);
+    nextBtn.addEventListener("click", next);
+
+    // Keyboard arrows
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") prev();
+      if (e.key === "ArrowRight") next();
+    });
+
+    // Swipe detection for carousel navigation
+    let swipeStartX = 0;
+    let swipeEndX = 0;
+    let swipeStartY = 0;
+    const swipeThreshold = 50; // minimum pixels for swipe detection
+    
+    compareCard.addEventListener("touchstart", (e) => {
+      swipeStartX = e.changedTouches[0].clientX;
+      swipeStartY = e.changedTouches[0].clientY;
+    }, false);
+
+    compareCard.addEventListener("touchend", (e) => {
+      swipeEndX = e.changedTouches[0].clientX;
+      const swipeEndY = e.changedTouches[0].clientY;
+      
+      // Calculate distances
+      const deltaX = swipeEndX - swipeStartX;
+      const deltaY = swipeEndY - swipeStartY;
+      
+      // Only register swipe if horizontal movement is larger than vertical
+      // and exceeds threshold
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > swipeThreshold) {
+        if (deltaX < 0) {
+          // Swiped left - go to next
+          next();
+        } else {
+          // Swiped right - go to previous
+          prev();
+        }
+      }
+    }, false);
+
+    // Init
+    buildGeneral();
+    initCarouselDots();
+    renderVariant();
+    setPos(Number(slider.value));
+
+    // --- blur overlay behaviour with PayPal payment ------------------------------------------------
+    (function(){
+      const overlay = document.getElementById("blurOverlay");
+      const paymentContainer = document.getElementById("paymentContainer");
+      const paymentLayer = document.getElementById("paymentLayer");
+      const modalBackdrop = document.getElementById("modalBackdrop");
+      const unlockMessage = document.getElementById("unlockMessage");
+      if (!overlay || !paymentContainer) return;
+
+      let paypalButtonsRendered = false;
+
+      // DEFINE FUNCTION FIRST before using it
+      const renderPayPalButtons = () => {
+        if (paypalButtonsRendered) {
+          console.log("PayPal buttons already rendering");
+          return;
+        }
+
+        if (!window.paypal) {
+          console.log("PayPal SDK not ready, retrying...");
+          setTimeout(renderPayPalButtons, 500);
+          return;
+        }
+
+        const container = document.getElementById("paypal-button-container");
+        if (!container) {
+          console.error("Container not found!");
+          return;
+        }
+        
+        // Always clear the container before rendering to prevent duplicate iframes
+        console.log("Clearing container for fresh PayPal button render...");
+        container.innerHTML = "";
+        
+        paypalButtonsRendered = true;
+        
+        // Ensure container is clickable - apply to all levels
+        container.style.pointerEvents = "auto";
+        container.style.touchAction = "auto";
+        container.style.cursor = "pointer";
+        container.style.display = "block";
+        container.style.width = "100%";
+        container.style.maxWidth = "100%";
+        container.style.minHeight = "50px";
+
+        try {
+          const isMobileDevice = window.innerWidth <= 600;
+          const buttonHeight = isMobileDevice ? 55 : 50;
+          
+          paypal.Buttons({
+            style: {
+              layout: 'vertical',
+              color: 'blue',
+              shape: 'rect',
+              label: 'paypal',
+              height: buttonHeight,
+              tagline: false
+            },
+            funding: {
+              allowed: [paypal.FUNDING.PAYPAL],
+              disallowed: [paypal.FUNDING.CARD]
+            },
+            createOrder: function(data, actions) {
+              console.log("Creating PayPal order...");
+              return actions.order.create({
+                purchase_units: [{
+                  amount: {
+                    value: "1.00",
+                    currency_code: "USD"
+                  }
+                }]
+              });
+            },
+            onApprove: function(data, actions) {
+              console.log("Order approved, capturing payment...");
+              return actions.order.capture().then(function(orderData) {
+                overlay.style.transition = "none";
+                document.getElementById("pageContent")?.classList.remove("is-blurred");
+                paymentLayer?.classList.remove("show");
+                unlockMessage.classList.add("show");
+                document.getElementById("zoomBtn").classList.add("unlocked");
+                document.getElementById("downloadAllBtn").classList.add("unlocked");
+                console.log("Payment successful!", orderData);
+              });
+            },
+            onError: function(err) {
+              console.error("PayPal error", err);
+              paypalButtonsRendered = false;
+              alert("Payment error. Please try again.");
+            }
+          }).render("#paypal-button-container").then(function() {
+            console.log("✓ PayPal button rendered successfully and is clickable");
+            // Ensure all nested elements are clickable
+            const paypalButtons = document.querySelectorAll('#paypal-button-container *');
+            paypalButtons.forEach(btn => {
+              btn.style.pointerEvents = "auto";
+              btn.style.touchAction = "auto";
+            });
+          }).catch(function(err) {
+            console.error("✗ Failed to render PayPal button:", err);
+            paypalButtonsRendered = false;
+          });
+        } catch(err) {
+          console.error("Error:", err);
+          paypalButtonsRendered = false;
+        }
+      };
+
+      // NOW set up the 12-second blur and button show
+      setTimeout(() => {
+        console.log("12 seconds passed - showing modal");
+        console.log("Screen width:", window.innerWidth);
+        console.log("Is mobile?", window.innerWidth <= 600);
+        document.getElementById("pageContent")?.classList.add("is-blurred");
+        paymentLayer?.classList.add("show");
+        
+        // Check if container exists
+        const container = document.getElementById("paypal-button-container");
+        if (container) {
+          console.log("✓ Container found, dimensions:", container.offsetWidth, "x", container.offsetHeight);
+        } else {
+          console.error("✗ Container NOT found!");
+        }
+        
+        // Render after layout is stable
+        requestAnimationFrame(() => {
+          requestAnimationFrame(renderPayPalButtons);
+        });
+      }, 12000);
+      
+      // Cancel button
+      const cancelBtn = document.getElementById("cancelPaymentBtn");
+      if (cancelBtn) {
+        cancelBtn.addEventListener("click", function() {
+          document.getElementById("pageContent")?.classList.remove("is-blurred");
+          paymentLayer?.classList.remove("show");
+          const container = document.getElementById("paypal-button-container");
+          if (container) container.innerHTML = "";
+          paypalButtonsRendered = false;
+        });
+      }
+    })();
+
+    // --- fullscreen zoomable image ---
+    (function(){
+      const zoomOverlay = document.getElementById('zoomOverlay');
+      const zoomImg = document.getElementById('zoomImg');
+      let currentScale = 1, currentX = 0, currentY = 0;
+      let isPanning = false, startX = 0, startY = 0;
+
+      function updateTransform(){
+        zoomImg.style.transform = `translate(${currentX}px,${currentY}px) scale(${currentScale})`;
+      }
+
+      function openZoom(src){
+        zoomImg.src = src;
+        currentScale = 1; currentX = 0; currentY = 0;
+        updateTransform();
+        zoomOverlay.classList.add('visible');
+        zoomOverlay.setAttribute('aria-hidden', 'false');
+        // after image loads, scale so entire image fits in viewport
+        zoomImg.onload = () => {
+          const maxW = window.innerWidth * 0.95;
+          const maxH = window.innerHeight * 0.95;
+          const scale = Math.min(maxW / zoomImg.naturalWidth, maxH / zoomImg.naturalHeight);
+          currentScale = scale;
+          currentX = 0; currentY = 0;
+          updateTransform();
+        };
+      }
+      function closeZoom(){
+        zoomOverlay.classList.remove('visible');
+        zoomOverlay.setAttribute('aria-hidden', 'true');
+      }
+
+      // expand button opens variant in zoom mode
+      const zoomBtn = document.getElementById('zoomBtn');
+      zoomBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openZoom(variantImg.src);
+      });
+
+      // Only close on X button or Escape key - NOT on image click
+      document.getElementById('zoomCloseBtn').addEventListener('click', (e)=>{ e.stopPropagation(); closeZoom(); });
+      window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeZoom(); });
+
+      // Image interactions for zoom/pan - prevent closing on click
+      zoomImg.addEventListener('click', (e) => { e.stopPropagation(); });
+      
+      zoomImg.addEventListener('wheel', (e)=>{
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 1.1 : 0.9;
+        currentScale *= delta;
+        currentScale = Math.min(Math.max(currentScale, 0.5), 10);
+        updateTransform();
+      });
+
+      zoomImg.addEventListener('pointerdown', (e)=>{
+        isPanning = true;
+        startX = e.clientX - currentX;
+        startY = e.clientY - currentY;
+        zoomImg.setPointerCapture(e.pointerId);
+      });
+      zoomImg.addEventListener('pointermove', (e)=>{
+        if (!isPanning) return;
+        currentX = e.clientX - startX;
+        currentY = e.clientY - startY;
+        updateTransform();
+      });
+      zoomImg.addEventListener('pointerup', (e)=>{ isPanning = false; zoomImg.releasePointerCapture(e.pointerId); });
+      zoomImg.addEventListener('pointercancel', (e)=>{ isPanning = false; });
+    })();
+
+    // --- image download functionality ---
+    (function(){
+      function downloadImage(url, filename){
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename || 'image';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      // download single image from zoom view
+      document.getElementById('zoomDownloadBtn').addEventListener('click', ()=>{
+        const src = document.getElementById('zoomImg').src;
+        const filename = `variant-${new Date().toISOString().slice(0,10)}.jpg`;
+        downloadImage(src, filename);
+      });
+
+      // download all variant images
+      document.getElementById('downloadAllBtn').addEventListener('click', ()=>{
+        if (!variants || variants.length === 0) return;
+        variants.forEach((v, i)=>{
+          setTimeout(()=>{
+            const filename = `variant-${i+1}-${v.label}-${new Date().toISOString().slice(0,10)}.jpg`;
+            downloadImage(v.imageUrl, filename);
+          }, i * 200); // stagger downloads slightly
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
