@@ -46,20 +46,48 @@
     }
 
     header{
-      display:flex;
-      align-items:flex-end;
-      justify-content:space-between;
-      gap:10px;
+      display:block;
       padding: 6px 4px;
     }
-    .header-buttons {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .viewer-header{
+      display:flex;
+      flex-direction:column;
+      align-items:stretch;
+      gap:12px;
+      min-width: 0;
     }
-    .title{display:flex; flex-direction:column; gap:4px;}
-    .title h1{margin:0; font-size:18px; letter-spacing:.2px;}
-    .title p{margin:0; color:var(--muted); font-size:13px;}
+    .viewer-header-text{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+    .viewer-header-actions{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .viewer-title{
+      margin:0;
+      font-size:18px;
+      letter-spacing:.2px;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .viewer-description{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.4;
+      text-align:left;
+      flex: 1 1 320px;
+      min-width: 240px;
+      max-width: 680px;
+    }
 
     .pill{
       display:inline-flex;
@@ -90,12 +118,24 @@
     }
 
     .compare{
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      padding:12px;
+      background: rgba(0,0,0,.2);
+    }
+
+    .viewerFrame{
       position:relative;
       width:100%;
       aspect-ratio: 16 / 10;
-      min-height: 260px;
+      min-height: 220px;
       max-height: 560px;
-      background: rgba(0,0,0,.2);
+      border-radius: 14px;
+      overflow:hidden;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.24);
     }
 
     .imgLayer{
@@ -108,58 +148,8 @@
       -webkit-user-drag:none;
     }
 
-    /* Variant image visible on RIGHT side */
     .variant{
-      clip-path: inset(0 0 0 var(--pos));
       filter: saturate(1.05) contrast(1.05);
-    }
-
-    .divider{
-      position:absolute;
-      top:0; bottom:0;
-      left: var(--pos);
-      width: 2px;
-      background: linear-gradient(180deg, var(--accent), var(--accent2));
-      box-shadow: 0 0 20px rgba(0,212,255,.50), 0 0 40px rgba(255,107,53,.30);
-      transform: translateX(-1px);
-      pointer-events:none;
-    }
-
-    .handle{
-      position:absolute;
-      left: var(--pos);
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 50px;
-      height: 50px;
-      border-radius: 999px;
-      background: radial-gradient(circle at 30% 30%, rgba(0,212,255,.20), rgba(255,107,53,.10));
-      border: 2px solid rgba(0,212,255,.40);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 0 30px rgba(0,212,255,.40), 0 14px 36px rgba(0,0,0,.50);
-      display:grid;
-      place-items:center;
-      pointer-events:none;
-    }
-    .handle:before{
-      content:"";
-      width: 20px;
-      height: 20px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      box-shadow: 0 0 16px rgba(0,212,255,.60);
-    }
-
-    .range{
-      position:absolute;
-      inset:0;
-      width:100%;
-      height:100%;
-      margin:0;
-      opacity:0;
-      cursor: ew-resize;
-      pointer-events: none;
     }
 
     .navBtn{
@@ -182,7 +172,6 @@
     }
     .navBtn{ z-index: 5; }
     .labels{ z-index: 4; }
-    .divider, .handle{ z-index: 3; }
     .imgLayer{ z-index: 1; }
     .navBtn:hover{ background: rgba(10,16,30,.62); border-color: rgba(255,255,255,.28); }
     .navBtn:active{ transform: translateY(-50%) scale(.98); }
@@ -487,17 +476,46 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,.85);
+      background: rgba(0,0,0,.90);
       z-index: 10001;
       align-items: center;
       justify-content: center;
-      cursor: zoom-out;
       overflow: hidden;
+      touch-action: none;
     }
     .zoom-overlay.visible { display: flex; }
+    .zoom-stage{
+      width: min(90vw, 1300px);
+      height: 85vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      border-radius: 14px;
+      touch-action: none;
+      cursor: grab;
+    }
+    .zoom-content{
+      width: min(90vw, 1300px);
+      height: calc(85vh + 64px);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      gap: 12px;
+    }
+    .zoom-viewport{
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      touch-action: none;
+    }
     .zoom-overlay img {
-      max-width: 95vw;
-      max-height: 95vh;
+      max-width: 90vw;
+      max-height: 85vh;
       width: auto;
       height: auto;
       object-fit: contain;
@@ -506,11 +524,47 @@
       user-select: none;
       will-change: transform;
     }
+    .zoom-nav{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap: 12px;
+      flex: 0 0 auto;
+    }
+    .zoom-nav-btn{
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.22);
+      background: rgba(10,16,30,.48);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 12px 28px rgba(0,0,0,.35);
+      color: rgba(255,255,255,.95);
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+    .zoom-nav-btn:hover{ background: rgba(10,16,30,.65); border-color: rgba(255,255,255,.34); }
+    .zoom-nav-btn:active{ transform: scale(.97); }
+    .zoom-nav-btn svg{ width:20px; height:20px; opacity:.95; }
+    .zoom-share-hint{
+      display:none;
+      margin-top: 2px;
+      color: rgba(255,255,255,.72);
+      font-size: 12px;
+      text-align:center;
+      letter-spacing:.1px;
+    }
+    body.zoom-lock{
+      overflow:hidden;
+      touch-action:none;
+    }
     .zoom-button {
-      position: absolute;
-      top: 120px;
-      right: 12px;
-      z-index: 6;
+      position: relative;
+      z-index: 1;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       color: #fff;
       border: 2px solid rgba(0,212,255,.5);
@@ -600,18 +654,22 @@
       border-color: rgba(0,212,255,.80);
       box-shadow: 0 8px 24px rgba(0,212,255,.30);
     }
+    .download-all-button:disabled {
+      opacity: .65;
+      cursor: wait;
+      box-shadow: none;
+    }
 
-    /* Hide premium features until payment */
+    /* Premium action availability */
     #zoomBtn,
     #downloadAllBtn {
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.3s ease;
     }
-    
-    /* Show after payment */
-    #zoomBtn.unlocked,
-    #downloadAllBtn.unlocked {
+
+    #zoomBtn.is-available,
+    #downloadAllBtn.is-available {
       opacity: 1;
       pointer-events: auto;
     }
@@ -640,6 +698,71 @@
       gap:10px;
       pointer-events:none;
     }
+    .variantFrame .labels{
+      right: auto;
+      justify-content: flex-start;
+    }
+    .variant-actions{
+      display:flex;
+      justify-content:flex-end;
+      align-items:center;
+      margin-top: 10px;
+      padding: 0 2px;
+    }
+    .variant-lock-overlay{
+      position:absolute;
+      inset:0;
+      z-index:4;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: rgba(8,12,20,.45);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .2s ease;
+    }
+    .variantFrame.locked .variant{
+      filter: blur(8px) saturate(.7) brightness(.82);
+      transform: scale(1.02);
+    }
+    .variantFrame.locked .variant-lock-overlay{
+      opacity:1;
+      pointer-events:auto;
+    }
+    .variant-lock-panel{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:10px;
+      padding:14px 16px;
+      border-radius:14px;
+      background: rgba(10,16,30,.62);
+      border: 1px solid rgba(255,255,255,.18);
+      box-shadow: 0 16px 36px rgba(0,0,0,.38);
+    }
+    .variant-lock-text{
+      font-size:13px;
+      color: rgba(255,255,255,.88);
+      text-align:center;
+    }
+    .unlock-variant-btn{
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,212,255,.45);
+      background: linear-gradient(135deg, rgba(0,212,255,.24), rgba(255,107,53,.24));
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+    }
+    .unlock-variant-btn:hover{
+      border-color: rgba(0,212,255,.78);
+      background: linear-gradient(135deg, rgba(0,212,255,.34), rgba(255,107,53,.30));
+    }
+    .unlock-variant-btn:active{ transform: scale(.98); }
     .tag{
       padding: 8px 10px;
       border-radius: 999px;
@@ -686,6 +809,11 @@
       background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
       padding: 12px 12px;
       color: rgba(255,255,255,.86);
+      overflow: visible;
+      height: auto;
+      max-height: none;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
 
     .textBox p{ margin:0; }
@@ -714,6 +842,14 @@
     .rich h3{ margin: 10px 0 6px; font-size: 13px; color: rgba(255,255,255,.90); }
     .rich ul{ margin: 6px 0 0 18px; padding:0; }
     .rich li{ margin: 4px 0; color: rgba(255,255,255,.82); }
+    .rich,
+    .rich p,
+    .rich li,
+    .rich h3,
+    .rich span {
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
     .rich .hr{
       margin: 10px 0;
       height:1px;
@@ -780,26 +916,45 @@
         grid-template-columns: 1fr 1fr;
         gap: 14px;
       }
-      header .title h1{ font-size: 20px; }
-      .compare{ aspect-ratio: 16/9; }
+      .viewer-title{ font-size: 20px; }
+      .viewerFrame{ aspect-ratio: 16/9; }
     }
 
     /* mobile-specific tweaks */
     @media (max-width: 859px){
       body { font-size: 17px; }
-      header .title h1{ font-size: 18px; }
+      .viewer-header{ gap: 10px; }
+      .viewer-header-text{ gap: 10px 14px; }
+      .viewer-header-actions{ justify-content: center; }
+      .viewer-title{ font-size: 18px; }
+      .viewer-description{
+        flex: 1 1 260px;
+        min-width: 220px;
+        font-size: 14px;
+      }
+      .zoom-button {
+        width: 52px;
+        height: 52px;
+        font-size: 24px;
+      }
       .navBtn{ width: 54px; height: 54px; border-radius: 18px; }
       .navBtn svg{ width:24px; height:24px; }
-      .compare{ min-height: 260px; /* keep same but allow more flex */ }
+      .compare{ padding: 10px; gap: 10px; }
+      .viewerFrame{ min-height: 240px; }
       .tag { font-size: 14px; padding: 10px 12px; }
-      /* ensure the range input is easy to hit on touch devices */
-      .range{ height:100%; }
       /* allow panels to scroll naturally with inertia */
       .panelGrid .card {
-        overflow-y: auto;
+        overflow: visible;
+        height: auto;
+        max-height: none;
         -webkit-overflow-scrolling: touch;
       }
-      .textBox.rich { max-height: 200px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+      .textBox.rich {
+        max-height: none;
+        overflow: visible;
+        height: auto;
+        -webkit-overflow-scrolling: touch;
+      }
     }
   </style>
 </head>
@@ -813,6 +968,8 @@
   
   <!-- PayPal SDK -->
   <script src="https://www.paypal.com/sdk/js?client-id=AT99Mni9WIsd_2Pvo8_B02s_UOeyH_11EzMRyEShBg5eJOx0wGIAITsGw52a7ntpAohIxqTtGGNAv7I2&currency=USD&intent=capture"></script>
+  <script src="https://unpkg.com/@panzoom/panzoom@4.6.0/dist/panzoom.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   
   <!-- Payment button container -->
   <div class="payment-layer" id="paymentLayer">
@@ -837,49 +994,76 @@
   <div id="zoomOverlay" class="zoom-overlay" aria-hidden="true">
     <button id="zoomCloseBtn" class="zoom-close-button" aria-label="Close full screen view" type="button">✕</button>
     <button id="zoomDownloadBtn" class="zoom-download-button" aria-label="Download this image" type="button">⬇ Download</button>
-    <img id="zoomImg" alt="Expanded variant" />
+    <div class="zoom-content">
+      <div class="zoom-stage" id="zoomStage">
+        <div class="zoom-viewport" id="zoomViewport">
+          <img id="zoomImg" alt="Expanded variant" />
+        </div>
+      </div>
+      <div class="zoom-nav" aria-label="Image navigation controls">
+        <button id="zoomPrevBtn" class="zoom-nav-btn" type="button" aria-label="Previous image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button id="zoomNextBtn" class="zoom-nav-btn" type="button" aria-label="Next image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+      <div class="zoom-share-hint" id="zoomShareHint">Use Share → Save Image to Photos</div>
+    </div>
   </div>
 
   <div id="pageContent">
   <div class="wrap">
     <header>
-      <div class="title">
-        <h1>Before / After</h1>
-        <p>Slide to compare the <b>original</b> room with selected repaint option. Use the arrows to explore all designs.</p>
-      </div>
-      <div class="header-buttons">
-        <button id="downloadAllBtn" class="download-all-button" aria-label="Download all images" type="button">Download all images</button>
-        <div class="pill"><span class="dot"></span><span id="counter">1 / 10</span></div>
+      <div class="viewer-header">
+        <div class="viewer-header-text">
+          <h1 class="viewer-title">Repaint Options Viewer</h1>
+          <p class="viewer-description">Original room photo on top, selected repaint option below. Use arrows, dots, swipe, or keyboard to browse.</p>
+        </div>
+        <div class="viewer-header-actions">
+          <button id="downloadAllBtn" class="download-all-button" aria-label="Download all images" type="button">Download all images</button>
+          <div class="pill"><span class="dot"></span><span id="counter">1/10</span></div>
+        </div>
       </div>
     </header>
 
-    <section class="card compare" id="compareCard" style="--pos:50%;">
-      <img class="imgLayer base" id="baseImg" alt="Base image" />
-      <img class="imgLayer variant" id="variantImg" alt="Variant image" />
-      <!-- zoom button for right/variant image -->
-      <button id="zoomBtn" class="zoom-button" aria-label="View variant full screen" type="button">🔍</button>
-
-      <div class="labels">
-        <div class="tag" id="baseLabel">Base</div>
-        <div class="tag" id="variantLabel">Option 1</div>
+    <section class="card compare" id="compareCard">
+      <div class="viewerFrame baseFrame">
+        <img class="imgLayer base" id="baseImg" alt="Original room photo" />
+        <div class="labels">
+          <div class="tag" id="baseLabel">Original</div>
+        </div>
       </div>
 
-      <div class="divider" aria-hidden="true"></div>
-      <div class="handle" aria-hidden="true"></div>
+      <div class="viewerFrame variantFrame" id="variantFrame">
+        <img class="imgLayer variant" id="variantImg" alt="Selected repaint option" />
 
-      <button class="navBtn left" id="prevBtn" aria-label="Previous option" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 18l-6-6 6-6"/>
-        </svg>
-      </button>
+        <div class="labels">
+          <div class="tag" id="variantLabel">Option 1</div>
+        </div>
 
-      <button class="navBtn right" id="nextBtn" aria-label="Next option" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 18l6-6-6-6"/>
-        </svg>
-      </button>
+        <div class="variant-lock-overlay" id="variantLockOverlay" tabindex="0" role="button" aria-label="Unlock this repaint option" hidden>
+          <div class="variant-lock-panel">
+            <div class="variant-lock-text">This repaint option is locked</div>
+            <button id="unlockVariantBtn" class="unlock-variant-btn" type="button">Unlock to view</button>
+          </div>
+        </div>
 
-      <input class="range" id="slider" type="range" min="0" max="100" value="50" aria-label="Reveal slider" />
+        <button class="navBtn left" id="prevBtn" aria-label="Previous repaint option" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+
+        <button class="navBtn right" id="nextBtn" aria-label="Next repaint option" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+      </div>
+      <div class="variant-actions">
+        <button id="zoomBtn" class="zoom-button" aria-label="View selected option full screen" type="button">🔍</button>
+      </div>
     </section>
 
     <!-- Carousel dots - below image -->
@@ -2344,8 +2528,8 @@
 
     const baseImg = document.getElementById("baseImg");
     const variantImg = document.getElementById("variantImg");
-    const slider = document.getElementById("slider");
     const compareCard = document.getElementById("compareCard");
+    const variantFrame = document.getElementById("variantFrame");
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
 
@@ -2354,11 +2538,54 @@
 
     const variantHtml = document.getElementById("variantHtml");
     const variantMeta = document.getElementById("variantMeta");
+    const zoomBtnControl = document.getElementById("zoomBtn");
+    const downloadAllBtnControl = document.getElementById("downloadAllBtn");
+    const variantLockOverlay = document.getElementById("variantLockOverlay");
+    const unlockVariantBtn = document.getElementById("unlockVariantBtn");
 
     const generalHtml = document.getElementById("generalHtml");
     const generalMeta = document.getElementById("generalMeta");
 
+    const variantImageUrls = variants.map(v => v.imageUrl);
+    const FREE_COUNT = 2;
+    const TOTAL = variants.length;
+    const UNLOCK_STORAGE_KEY = "repaint_unlocked";
+
     let idx = 0;
+    let isPaid = false;
+    let openPaymentModal = () => {};
+    const preloadCache = new Map();
+
+    try {
+      isPaid = localStorage.getItem(UNLOCK_STORAGE_KEY) === "true";
+    } catch (error) {
+      isPaid = false;
+    }
+
+    function isLocked(index){
+      return !isPaid && index >= FREE_COUNT;
+    }
+
+    function updateAccessUI(){
+      const locked = isLocked(idx);
+      variantFrame.classList.toggle("locked", locked);
+      variantLockOverlay.hidden = !locked;
+
+      zoomBtnControl.classList.toggle("is-available", !locked);
+      downloadAllBtnControl.classList.toggle("is-available", isPaid);
+    }
+
+    function setPaidState(paid, { persist = true } = {}){
+      isPaid = !!paid;
+      if (persist) {
+        try {
+          localStorage.setItem(UNLOCK_STORAGE_KEY, isPaid ? "true" : "false");
+        } catch (error) {
+          // ignore localStorage failures
+        }
+      }
+      updateAccessUI();
+    }
 
     function esc(s){
       return String(s)
@@ -2601,11 +2828,29 @@
       `;
     }
 
-    function setPos(value){
-      compareCard.style.setProperty("--pos", value + "%");
+    function normalizeVariantIndex(index){
+      const count = variants.length;
+      if (!count) return 0;
+      return ((index % count) + count) % count;
     }
 
-    function renderVariant(){
+    function preloadImage(url){
+      if (!url || preloadCache.has(url)) return;
+      const preloaded = new Image();
+      preloaded.src = url;
+      preloadCache.set(url, preloaded);
+    }
+
+    function preloadNeighborVariants(index){
+      if (!variantImageUrls.length) return;
+      const prevIndex = normalizeVariantIndex(index - 1);
+      const nextIndex = normalizeVariantIndex(index + 1);
+      preloadImage(variantImageUrls[prevIndex]);
+      preloadImage(variantImageUrls[nextIndex]);
+    }
+
+    function setVariant(index){
+      idx = normalizeVariantIndex(index);
       const v = variants[idx];
       const img = v.raw;
 
@@ -2613,7 +2858,7 @@
       variantImg.src = v.imageUrl;
 
       variantLabel.textContent = v.label;
-      counter.textContent = `${idx + 1} / ${variants.length}`;
+      counter.textContent = `${idx + 1}/${TOTAL}`;
 
       variantHtml.innerHTML = buildOptionHtml(img);
 
@@ -2637,6 +2882,8 @@
 
       // Update active carousel dot
       updateCarouselDots();
+      preloadNeighborVariants(idx);
+      updateAccessUI();
     }
 
     // Initialize carousel dots
@@ -2648,8 +2895,7 @@
         dot.className = "dot";
         if (i === idx) dot.classList.add("active");
         dot.addEventListener("click", () => {
-          idx = i;
-          renderVariant();
+          setVariant(i);
         });
         dotsContainer.appendChild(dot);
       }
@@ -2668,50 +2914,37 @@
     }
 
     function prev(){
-      idx = (idx - 1 + variants.length) % variants.length;
-      renderVariant();
+      setVariant(idx - 1);
     }
 
     function next(){
-      idx = (idx + 1) % variants.length;
-      renderVariant();
+      setVariant(idx + 1);
     }
-
-    // Slider input
-    slider.addEventListener("input", (e) => setPos(Number(e.target.value)));
-
-    // Drag anywhere (mobile friendly)
-    function setFromPointer(clientX){
-      const rect = compareCard.getBoundingClientRect();
-      const x = Math.min(Math.max(clientX - rect.left, 0), rect.width);
-      const percent = (x / rect.width) * 100;
-      slider.value = String(Math.round(percent));
-      setPos(percent);
-    }
-
-    let isDown = false;
-
-    compareCard.addEventListener("pointerdown", (e) => {
-      if (e.target.closest(".navBtn, #zoomBtn")) return;
-      isDown = true;
-      compareCard.setPointerCapture(e.pointerId);
-      setFromPointer(e.clientX);
-    });
-
-    compareCard.addEventListener("pointermove", (e) => {
-      if (!isDown) return;
-      setFromPointer(e.clientX);
-    });
-
-    compareCard.addEventListener("pointerup", () => { isDown = false; });
-    compareCard.addEventListener("pointercancel", () => { isDown = false; });
 
     // Buttons
     prevBtn.addEventListener("click", prev);
     nextBtn.addEventListener("click", next);
 
+    function handleLockedOverlayOpen(){
+      if (!isLocked(idx)) return;
+      openPaymentModal();
+    }
+
+    variantLockOverlay.addEventListener("click", handleLockedOverlayOpen);
+    variantLockOverlay.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        handleLockedOverlayOpen();
+      }
+    });
+    unlockVariantBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      handleLockedOverlayOpen();
+    });
+
     // Keyboard arrows
     window.addEventListener("keydown", (e) => {
+      if (document.getElementById("zoomOverlay")?.classList.contains("visible")) return;
       if (e.key === "ArrowLeft") prev();
       if (e.key === "ArrowRight") next();
     });
@@ -2722,12 +2955,14 @@
     let swipeStartY = 0;
     const swipeThreshold = 50; // minimum pixels for swipe detection
     
-    compareCard.addEventListener("touchstart", (e) => {
+    const swipeTarget = variantFrame || compareCard;
+
+    swipeTarget.addEventListener("touchstart", (e) => {
       swipeStartX = e.changedTouches[0].clientX;
       swipeStartY = e.changedTouches[0].clientY;
     }, false);
 
-    compareCard.addEventListener("touchend", (e) => {
+    swipeTarget.addEventListener("touchend", (e) => {
       swipeEndX = e.changedTouches[0].clientX;
       const swipeEndY = e.changedTouches[0].clientY;
       
@@ -2751,46 +2986,52 @@
     // Init
     buildGeneral();
     initCarouselDots();
-    renderVariant();
-    setPos(Number(slider.value));
+    baseImg.src = baseImageUrl;
+    setVariant(0);
+    updateAccessUI();
 
-    // --- blur overlay behaviour with PayPal payment ------------------------------------------------
+    // --- index-based lock + PayPal payment ------------------------------------------------
     (function(){
-      const overlay = document.getElementById("blurOverlay");
       const paymentContainer = document.getElementById("paymentContainer");
       const paymentLayer = document.getElementById("paymentLayer");
-      const modalBackdrop = document.getElementById("modalBackdrop");
       const unlockMessage = document.getElementById("unlockMessage");
-      if (!overlay || !paymentContainer) return;
+      if (!paymentContainer || !paymentLayer) return;
 
       let paypalButtonsRendered = false;
 
-      // DEFINE FUNCTION FIRST before using it
+      function hidePaymentModal(){
+        paymentLayer.classList.remove("show");
+      }
+
+      function showPaymentModal(){
+        paymentLayer.classList.add("show");
+        requestAnimationFrame(() => {
+          requestAnimationFrame(renderPayPalButtons);
+        });
+      }
+
+      function onPaymentSuccess(){
+        setPaidState(true);
+        hidePaymentModal();
+        unlockMessage.classList.add("show");
+        setTimeout(() => unlockMessage.classList.remove("show"), 1400);
+      }
+
+      openPaymentModal = showPaymentModal;
+
       const renderPayPalButtons = () => {
-        if (paypalButtonsRendered) {
-          console.log("PayPal buttons already rendering");
-          return;
-        }
+        if (paypalButtonsRendered) return;
 
         if (!window.paypal) {
-          console.log("PayPal SDK not ready, retrying...");
           setTimeout(renderPayPalButtons, 500);
           return;
         }
 
         const container = document.getElementById("paypal-button-container");
-        if (!container) {
-          console.error("Container not found!");
-          return;
-        }
-        
-        // Always clear the container before rendering to prevent duplicate iframes
-        console.log("Clearing container for fresh PayPal button render...");
+        if (!container) return;
+
         container.innerHTML = "";
-        
         paypalButtonsRendered = true;
-        
-        // Ensure container is clickable - apply to all levels
         container.style.pointerEvents = "auto";
         container.style.touchAction = "auto";
         container.style.cursor = "pointer";
@@ -2802,7 +3043,7 @@
         try {
           const isMobileDevice = window.innerWidth <= 600;
           const buttonHeight = isMobileDevice ? 55 : 50;
-          
+
           paypal.Buttons({
             style: {
               layout: 'vertical',
@@ -2817,7 +3058,6 @@
               disallowed: [paypal.FUNDING.CARD]
             },
             createOrder: function(data, actions) {
-              console.log("Creating PayPal order...");
               return actions.order.create({
                 purchase_units: [{
                   amount: {
@@ -2828,14 +3068,8 @@
               });
             },
             onApprove: function(data, actions) {
-              console.log("Order approved, capturing payment...");
               return actions.order.capture().then(function(orderData) {
-                overlay.style.transition = "none";
-                document.getElementById("pageContent")?.classList.remove("is-blurred");
-                paymentLayer?.classList.remove("show");
-                unlockMessage.classList.add("show");
-                document.getElementById("zoomBtn").classList.add("unlocked");
-                document.getElementById("downloadAllBtn").classList.add("unlocked");
+                onPaymentSuccess();
                 console.log("Payment successful!", orderData);
               });
             },
@@ -2845,51 +3079,25 @@
               alert("Payment error. Please try again.");
             }
           }).render("#paypal-button-container").then(function() {
-            console.log("✓ PayPal button rendered successfully and is clickable");
-            // Ensure all nested elements are clickable
             const paypalButtons = document.querySelectorAll('#paypal-button-container *');
             paypalButtons.forEach(btn => {
               btn.style.pointerEvents = "auto";
               btn.style.touchAction = "auto";
             });
           }).catch(function(err) {
-            console.error("✗ Failed to render PayPal button:", err);
+            console.error("PayPal render error:", err);
             paypalButtonsRendered = false;
           });
-        } catch(err) {
-          console.error("Error:", err);
+        } catch (err) {
+          console.error("PayPal setup error:", err);
           paypalButtonsRendered = false;
         }
       };
 
-      // NOW set up the 12-second blur and button show
-      setTimeout(() => {
-        console.log("12 seconds passed - showing modal");
-        console.log("Screen width:", window.innerWidth);
-        console.log("Is mobile?", window.innerWidth <= 600);
-        document.getElementById("pageContent")?.classList.add("is-blurred");
-        paymentLayer?.classList.add("show");
-        
-        // Check if container exists
-        const container = document.getElementById("paypal-button-container");
-        if (container) {
-          console.log("✓ Container found, dimensions:", container.offsetWidth, "x", container.offsetHeight);
-        } else {
-          console.error("✗ Container NOT found!");
-        }
-        
-        // Render after layout is stable
-        requestAnimationFrame(() => {
-          requestAnimationFrame(renderPayPalButtons);
-        });
-      }, 12000);
-      
-      // Cancel button
       const cancelBtn = document.getElementById("cancelPaymentBtn");
       if (cancelBtn) {
         cancelBtn.addEventListener("click", function() {
-          document.getElementById("pageContent")?.classList.remove("is-blurred");
-          paymentLayer?.classList.remove("show");
+          hidePaymentModal();
           const container = document.getElementById("paypal-button-container");
           if (container) container.innerHTML = "";
           paypalButtonsRendered = false;
@@ -2900,75 +3108,161 @@
     // --- fullscreen zoomable image ---
     (function(){
       const zoomOverlay = document.getElementById('zoomOverlay');
+      const zoomStage = document.getElementById('zoomStage');
       const zoomImg = document.getElementById('zoomImg');
-      let currentScale = 1, currentX = 0, currentY = 0;
-      let isPanning = false, startX = 0, startY = 0;
+      const zoomCloseBtn = document.getElementById('zoomCloseBtn');
+      const zoomBtn = document.getElementById('zoomBtn');
+      const zoomPrevBtn = document.getElementById('zoomPrevBtn');
+      const zoomNextBtn = document.getElementById('zoomNextBtn');
+      const PanzoomCtor = window.Panzoom;
 
-      function updateTransform(){
-        zoomImg.style.transform = `translate(${currentX}px,${currentY}px) scale(${currentScale})`;
+      let panzoom = null;
+      let wheelHandler = null;
+      let lastTapTime = 0;
+      let modalIndex = 0;
+
+      function normalizeModalIndex(index){
+        const count = variants.length;
+        if (!count) return 0;
+        return ((index % count) + count) % count;
       }
 
-      function openZoom(src){
+      function showModalImage(index){
+        if (isLocked(index)) {
+          closeZoom();
+          openPaymentModal();
+          return;
+        }
+        modalIndex = normalizeModalIndex(index);
+        const src = variants[modalIndex]?.imageUrl || variantImg.src;
+        zoomImg.dataset.modalIndex = String(modalIndex);
+        zoomImg.onload = () => setupPanzoom();
         zoomImg.src = src;
-        currentScale = 1; currentX = 0; currentY = 0;
-        updateTransform();
+        if (zoomImg.complete) setupPanzoom();
+      }
+
+      function prevModalImage(){
+        showModalImage(modalIndex - 1);
+      }
+
+      function nextModalImage(){
+        showModalImage(modalIndex + 1);
+      }
+
+      function removePanzoom(){
+        if (panzoom && typeof panzoom.destroy === 'function') {
+          panzoom.destroy();
+        }
+        panzoom = null;
+        if (zoomStage && wheelHandler) {
+          zoomStage.removeEventListener('wheel', wheelHandler);
+        }
+        wheelHandler = null;
+        zoomImg.style.transform = '';
+      }
+
+      function setupPanzoom(){
+        removePanzoom();
+        if (!PanzoomCtor || !zoomStage) return;
+        panzoom = PanzoomCtor(zoomImg, {
+          maxScale: 5,
+          minScale: 1,
+          contain: 'inside',
+          step: 0.25,
+          startScale: 1,
+          cursor: 'grab'
+        });
+
+        wheelHandler = (e) => {
+          e.preventDefault();
+          panzoom.zoomWithWheel(e);
+        };
+        zoomStage.addEventListener('wheel', wheelHandler, { passive: false });
+      }
+
+      function toggleDoubleTapZoom(clientX, clientY){
+        if (!panzoom || !zoomStage) return;
+        const rect = zoomStage.getBoundingClientRect();
+        const focal = {
+          x: clientX - rect.left,
+          y: clientY - rect.top,
+        };
+        const nextScale = panzoom.getScale() > 1.15 ? 1 : 2.5;
+        panzoom.zoom(nextScale, { animate: true, focal });
+      }
+
+      function openZoom(startIndex){
         zoomOverlay.classList.add('visible');
         zoomOverlay.setAttribute('aria-hidden', 'false');
-        // after image loads, scale so entire image fits in viewport
-        zoomImg.onload = () => {
-          const maxW = window.innerWidth * 0.95;
-          const maxH = window.innerHeight * 0.95;
-          const scale = Math.min(maxW / zoomImg.naturalWidth, maxH / zoomImg.naturalHeight);
-          currentScale = scale;
-          currentX = 0; currentY = 0;
-          updateTransform();
-        };
+        document.body.classList.add('zoom-lock');
+        showModalImage(startIndex);
       }
+
       function closeZoom(){
         zoomOverlay.classList.remove('visible');
         zoomOverlay.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('zoom-lock');
+        removePanzoom();
       }
 
       // expand button opens variant in zoom mode
-      const zoomBtn = document.getElementById('zoomBtn');
       zoomBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        openZoom(variantImg.src);
+        if (isLocked(idx)) {
+          openPaymentModal();
+          return;
+        }
+        openZoom(idx);
       });
+      zoomPrevBtn.addEventListener('click', (e) => { e.stopPropagation(); prevModalImage(); });
+      zoomNextBtn.addEventListener('click', (e) => { e.stopPropagation(); nextModalImage(); });
 
       // Only close on X button or Escape key - NOT on image click
-      document.getElementById('zoomCloseBtn').addEventListener('click', (e)=>{ e.stopPropagation(); closeZoom(); });
-      window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeZoom(); });
+      zoomCloseBtn.addEventListener('click', (e)=>{ e.stopPropagation(); closeZoom(); });
+      window.addEventListener('keydown', (e) => {
+        if (!zoomOverlay.classList.contains('visible')) return;
+        if (e.key === 'Escape') closeZoom();
+        if (e.key === 'ArrowLeft') { e.preventDefault(); prevModalImage(); }
+        if (e.key === 'ArrowRight') { e.preventDefault(); nextModalImage(); }
+      });
 
       // Image interactions for zoom/pan - prevent closing on click
       zoomImg.addEventListener('click', (e) => { e.stopPropagation(); });
-      
-      zoomImg.addEventListener('wheel', (e)=>{
+
+      zoomStage.addEventListener('dblclick', (e) => {
         e.preventDefault();
-        const delta = e.deltaY < 0 ? 1.1 : 0.9;
-        currentScale *= delta;
-        currentScale = Math.min(Math.max(currentScale, 0.5), 10);
-        updateTransform();
+        toggleDoubleTapZoom(e.clientX, e.clientY);
       });
 
-      zoomImg.addEventListener('pointerdown', (e)=>{
-        isPanning = true;
-        startX = e.clientX - currentX;
-        startY = e.clientY - currentY;
-        zoomImg.setPointerCapture(e.pointerId);
+      zoomStage.addEventListener('pointerup', (e) => {
+        if (e.pointerType !== 'touch') return;
+        const now = Date.now();
+        if (now - lastTapTime < 280) {
+          e.preventDefault();
+          toggleDoubleTapZoom(e.clientX, e.clientY);
+          lastTapTime = 0;
+          return;
+        }
+        lastTapTime = now;
       });
-      zoomImg.addEventListener('pointermove', (e)=>{
-        if (!isPanning) return;
-        currentX = e.clientX - startX;
-        currentY = e.clientY - startY;
-        updateTransform();
-      });
-      zoomImg.addEventListener('pointerup', (e)=>{ isPanning = false; zoomImg.releasePointerCapture(e.pointerId); });
-      zoomImg.addEventListener('pointercancel', (e)=>{ isPanning = false; });
     })();
 
     // --- image download functionality ---
     (function(){
+      const zoomDownloadBtn = document.getElementById('zoomDownloadBtn');
+      const zoomShareHint = document.getElementById('zoomShareHint');
+      const downloadAllBtn = document.getElementById('downloadAllBtn');
+      const defaultDownloadAllLabel = downloadAllBtn.textContent;
+
+      function isMobile(){
+        return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+          || (navigator.maxTouchPoints > 1 && window.matchMedia('(max-width: 1024px)').matches);
+      }
+
+      function canShareFiles(file){
+        return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
+      }
+
       function downloadImage(url, filename){
         const link = document.createElement('a');
         link.href = url;
@@ -2978,23 +3272,131 @@
         document.body.removeChild(link);
       }
 
-      // download single image from zoom view
-      document.getElementById('zoomDownloadBtn').addEventListener('click', ()=>{
-        const src = document.getElementById('zoomImg').src;
-        const filename = `variant-${new Date().toISOString().slice(0,10)}.jpg`;
-        downloadImage(src, filename);
-      });
+      function setDownloadAllPreparing(isPreparing){
+        downloadAllBtn.disabled = isPreparing;
+        downloadAllBtn.setAttribute('aria-busy', String(isPreparing));
+        if (isPreparing) {
+          downloadAllBtn.textContent = 'Preparing…';
+        } else {
+          downloadAllBtn.textContent = isMobile() ? 'Share all' : defaultDownloadAllLabel;
+        }
+      }
 
-      // download all variant images
-      document.getElementById('downloadAllBtn').addEventListener('click', ()=>{
-        if (!variants || variants.length === 0) return;
+      function legacyDownloadAll(){
         variants.forEach((v, i)=>{
           setTimeout(()=>{
             const filename = `variant-${i+1}-${v.label}-${new Date().toISOString().slice(0,10)}.jpg`;
             downloadImage(v.imageUrl, filename);
-          }, i * 200); // stagger downloads slightly
+          }, i * 200);
         });
-      });
+      }
+
+      async function buildAllImagesZipBlob(){
+        if (!window.JSZip) throw new Error('JSZip unavailable');
+        const zip = new JSZip();
+
+        const imageTasks = variants.map(async (v, index) => {
+          const response = await fetch(v.imageUrl, { cache: 'no-store' });
+          if (!response.ok) throw new Error(`Failed to fetch image: ${v.imageUrl}`);
+          const blob = await response.blob();
+          const type = blob.type || '';
+          const ext = type.includes('png') ? 'png' : type.includes('webp') ? 'webp' : 'jpg';
+          const fileName = `repaint-option-${String(index + 1).padStart(2, '0')}.${ext}`;
+          zip.file(fileName, blob);
+        });
+
+        await Promise.all(imageTasks);
+        return zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+      }
+
+      async function shareOrDownloadAllImages(){
+        if (!variants || variants.length === 0) return;
+
+        if (!isMobile()) {
+          legacyDownloadAll();
+          return;
+        }
+
+        setDownloadAllPreparing(true);
+        let zipBlob = null;
+
+        try {
+          zipBlob = await buildAllImagesZipBlob();
+          const zipFile = new File([zipBlob], 'repaint-images.zip', { type: 'application/zip' });
+          if (canShareFiles(zipFile)) {
+            await navigator.share({
+              files: [zipFile],
+              title: 'Repaint images',
+              text: 'All repaint options in one ZIP'
+            });
+            return;
+          }
+        } catch (error) {
+          if (!zipBlob) {
+            legacyDownloadAll();
+            return;
+          }
+        } finally {
+          setDownloadAllPreparing(false);
+        }
+
+        const zipUrl = URL.createObjectURL(zipBlob);
+        downloadImage(zipUrl, 'repaint-images.zip');
+        setTimeout(() => URL.revokeObjectURL(zipUrl), 1500);
+      }
+
+      async function shareOrDownloadCurrentModalImage(){
+        const zoomImg = document.getElementById('zoomImg');
+        const src = zoomImg?.src;
+        if (!src) return;
+
+        const currentIndex = Number(zoomImg.dataset.modalIndex || 0);
+        const optionNumber = String(currentIndex + 1).padStart(2, '0');
+        const srcPath = src.split('?')[0].toLowerCase();
+        const inferredExt = srcPath.endsWith('.png') ? 'png' : 'jpg';
+        let fileName = `repaint-option-${optionNumber}.${inferredExt}`;
+
+        try {
+          const response = await fetch(src, { cache: 'no-store' });
+          if (!response.ok) throw new Error('Failed to fetch image');
+          const blob = await response.blob();
+          const type = blob.type || (inferredExt === 'png' ? 'image/png' : 'image/jpeg');
+          const ext = type.includes('png') ? 'png' : 'jpg';
+          fileName = `repaint-option-${optionNumber}.${ext}`;
+
+          if (isMobile()) {
+            const file = new File([blob], fileName, { type });
+            if (canShareFiles(file)) {
+              await navigator.share({
+                files: [file],
+                title: `Repaint Option ${optionNumber}`,
+                text: 'Save Image to Photos'
+              });
+              return;
+            }
+          }
+
+          const objectUrl = URL.createObjectURL(blob);
+          downloadImage(objectUrl, fileName);
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+        } catch (error) {
+          downloadImage(src, fileName);
+        }
+      }
+
+      // download single image from zoom view
+      zoomDownloadBtn.addEventListener('click', shareOrDownloadCurrentModalImage);
+
+      if (isMobile()) {
+        zoomDownloadBtn.textContent = 'Share / Save';
+        if (zoomShareHint) {
+          zoomShareHint.style.display = 'block';
+        }
+        downloadAllBtn.textContent = 'Share all';
+      }
+
+      // download/share all variant images
+      downloadAllBtn.addEventListener('click', shareOrDownloadAllImages);
     })();
   </script>
 </body>
